@@ -19,7 +19,18 @@ public partial class NamespaceNodeViewModel : ObservableObject
     public ObservableCollection<NamespaceNodeViewModel> Children { get; } = new();
 
     [ObservableProperty]
-    private bool _isChecked;
+    private bool _isChecked = true;
+
+    [ObservableProperty]
+    private bool _isExpanded = true;
+
+    partial void OnIsCheckedChanged(bool value)
+    {
+        foreach (var child in Children)
+        {
+            child.IsChecked = value;
+        }
+    }
 
     /// <summary>
     /// Cria um novo nó de namespace.

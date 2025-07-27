@@ -60,6 +60,11 @@
                                     <StackPanel>
                                         <CheckBox IsChecked="{Binding IsSelected}" Content="Incluir projeto na análise" Margin="0,5,0,10" />
                                         <TreeView ItemsSource="{Binding NamespaceTree}">
+                                            <TreeView.ItemContainerTheme>
+                                                <ControlTheme TargetType="TreeViewItem" BasedOn="{StaticResource {x:Type TreeViewItem}}">
+                                                    <Setter Property="IsExpanded" Value="True" />
+                                                </ControlTheme>
+                                            </TreeView.ItemContainerTheme>
                                             <TreeView.ItemTemplate>
                                                 <TreeDataTemplate ItemsSource="{Binding Children}">
                                                     <StackPanel Orientation="Horizontal">

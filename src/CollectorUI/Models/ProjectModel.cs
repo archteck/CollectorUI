@@ -185,11 +185,21 @@ public class ProjectModel
 
     public ProjectModel() => NamespaceTree = new ObservableCollection<NamespaceNodeViewModel>();
 
-    public void BuildNamespaceTree()
+    private static void ExpandAll(NamespaceNodeViewModel node)
+    {
+        node.IsExpanded = true;
+        foreach (var child in node.Children)
+        {
+            ExpandAll(child);
+        }
+    }
+
+    private void BuildNamespaceTree()
     {
         NamespaceTree.Clear();
         foreach (var node in GetNamespaceTree())
         {
+            ExpandAll(node);
             NamespaceTree.Add(node);
         }
     }
