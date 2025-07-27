@@ -3,6 +3,7 @@ using Avalonia;
 using Avalonia.Controls.ApplicationLifetimes;
 using Avalonia.Platform.Storage;
 using CollectorUI.Models;
+using CollectorUI.Services;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 
@@ -19,6 +20,9 @@ public partial class MainWindowViewModel : ViewModelBase
     [ObservableProperty] private bool _isBusy;
 
     [ObservableProperty] private string? _statusMessage;
+
+    [ObservableProperty]
+    private bool _canGenerateCoverage;
 
     public MainWindowViewModel() => SolutionPath = "Please select a solution file (.slnx)";
 
@@ -102,6 +106,21 @@ public partial class MainWindowViewModel : ViewModelBase
         // Força o ItemsControl a atualizar
         TestProjects = new ObservableCollection<ProjectModel>(TestProjects);
     }
+
+    [RelayCommand]
+    public async Task GenerateCoverage()
+    {
+        // TODO: Implementar lógica de geração de cobertura
+        await ReportGeneratorService.CreateReportAsync(SolutionPath, TestProjects.ToList());
+        await Task.Delay(500);
+        StatusMessage = "Cobertura gerada (simulado).";
+    }
+
+    partial void OnTestProjectsChanged(ObservableCollection<ProjectModel> value) => UpdateCanGenerateCoverage();
+
+    partial void OnSolutionPathChanged(string? value) => UpdateCanGenerateCoverage();
+
+    private void UpdateCanGenerateCoverage() => CanGenerateCoverage = TestProjects.Count > 0 && !string.IsNullOrWhiteSpace(SolutionPath) && SolutionPath.EndsWith(".slnx", StringComparison.OrdinalIgnoreCase);
 
     /// <summary>
     /// Propriedade auxiliar para expor a árvore de namespaces do projeto selecionado.
