@@ -6,7 +6,7 @@ namespace CollectorUI.Services;
 public class ReportGeneratorService
 {
 
-    private async Task<string> RunCommand(string file, params string[] args)
+    private static async Task<string> RunCommand(string file, params string[] args)
     {
         var psi = new ProcessStartInfo
         {

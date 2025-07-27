@@ -1,5 +1,4 @@
-﻿using System.Threading.Tasks;
-using Avalonia;
+﻿using Avalonia;
 using Avalonia.Controls.ApplicationLifetimes;
 using Avalonia.Platform.Storage;
 using CollectorUI.Services;
@@ -44,6 +43,7 @@ public partial class MainWindowViewModel : ViewModelBase
     private async Task GenerateReport()
     {
         StatusText = "Generating report...";
+        await Task.Delay(1);
         // StatusText = await _reportGeneratorService.GenerateReport(DestinationFolder, clean: false);
     }
 }
