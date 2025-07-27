@@ -88,6 +88,8 @@ public partial class MainWindowViewModel : ViewModelBase
         {
             project.IsSelected = true;
         }
+        // Força o ItemsControl a atualizar
+        TestProjects = new ObservableCollection<ProjectModel>(TestProjects);
     }
 
     [RelayCommand]
@@ -97,6 +99,8 @@ public partial class MainWindowViewModel : ViewModelBase
         {
             project.IsSelected = false;
         }
+        // Força o ItemsControl a atualizar
+        TestProjects = new ObservableCollection<ProjectModel>(TestProjects);
     }
 
     /// <summary>
