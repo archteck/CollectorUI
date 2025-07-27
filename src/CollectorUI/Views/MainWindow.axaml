@@ -59,7 +59,7 @@
                         <TabControl.TabStripPlacement>Top</TabControl.TabStripPlacement>
                         <TabControl.ItemTemplate>
                             <DataTemplate>
-                                <TextBlock Text="{Binding Name}" />
+                                <TextBlock Text="{Binding Name}" FontSize="12" />
                             </DataTemplate>
                         </TabControl.ItemTemplate>
                         <TabControl.ContentTemplate>
