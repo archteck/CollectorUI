@@ -1,7 +1,9 @@
-﻿using Avalonia;
+﻿using System.Collections.ObjectModel;
+using Avalonia;
+using Avalonia.Controls;
 using Avalonia.Controls.ApplicationLifetimes;
 using Avalonia.Platform.Storage;
-using CollectorUI.Services;
+using CollectorUI.Models;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 
@@ -9,16 +11,20 @@ namespace CollectorUI.ViewModels;
 
 public partial class MainWindowViewModel : ViewModelBase
 {
-    [ObservableProperty] private string _statusText = string.Empty;
+    [ObservableProperty] private string? _solutionPath;
 
-    [ObservableProperty] [NotifyPropertyChangedFor(nameof(IsGeneratorButtonEnabled))]
-    private string _testProjectFolder = string.Empty;
+    [ObservableProperty] private SolutionModel? _currentSolution;
 
-    private readonly ReportGeneratorService _reportGeneratorService = new();
-    public bool IsGeneratorButtonEnabled => !string.IsNullOrEmpty(TestProjectFolder);
+    [ObservableProperty] private ObservableCollection<ProjectModel> _testProjects = new();
+
+    [ObservableProperty] private bool _isBusy;
+
+    [ObservableProperty] private string? _statusMessage;
+
+    public MainWindowViewModel() => SolutionPath = "Please select a solution file (.slnx)";
 
     [RelayCommand]
-    private async Task BrowseFolder()
+    public async Task SelectSolutionAsync()
     {
         var window = (Application.Current?.ApplicationLifetime as IClassicDesktopStyleApplicationLifetime)?.MainWindow;
         if (window is null)
@@ -26,24 +32,71 @@ public partial class MainWindowViewModel : ViewModelBase
             return;
         }
 
-        StatusText = "Browse Folder clicked!\n";
-        var folder = await window.StorageProvider.OpenFolderPickerAsync(new FolderPickerOpenOptions
+        var result = await window.StorageProvider.OpenFilePickerAsync(new FilePickerOpenOptions()
         {
-            AllowMultiple = false
+            AllowMultiple = false,
+            Title = "Select Solution File",
+            FileTypeFilter = [
+                new FilePickerFileType("Solution Files")
+                {
+                    Patterns = ["*.slnx"]
+                }
+            ]
         });
-
-        if (folder.Count > 0)
+        if (result.Count > 0)
         {
-            TestProjectFolder = folder[0].Path.LocalPath;
-            StatusText = "Browse Folder selected -> " + folder[0].Path;
+            await LoadSolutionAsync(result[0].Path.LocalPath);
         }
     }
 
     [RelayCommand]
-    private async Task GenerateReport()
+    public async Task LoadSolutionAsync(string path)
     {
-        StatusText = "Generating report...";
-        await Task.Delay(1);
-        // StatusText = await _reportGeneratorService.GenerateReport(DestinationFolder, clean: false);
+        if (string.IsNullOrEmpty(path) || !File.Exists(path))
+        {
+            StatusMessage = "Invalid solution file path";
+            return;
+        }
+
+        try
+        {
+            IsBusy = true;
+            StatusMessage = "Loading solution...";
+            SolutionPath = path;
+
+            await Task.Run(() =>
+            {
+                CurrentSolution = SolutionModel.ParseFromFile(path);
+                TestProjects = new ObservableCollection<ProjectModel>(CurrentSolution.TestProjects);
+            });
+
+            StatusMessage = $"Loaded solution with {TestProjects.Count} test projects";
+        }
+        catch (Exception ex)
+        {
+            StatusMessage = $"Error loading solution: {ex.Message}";
+        }
+        finally
+        {
+            IsBusy = false;
+        }
+    }
+
+    [RelayCommand]
+    public void SelectAllProjects()
+    {
+        foreach (var project in TestProjects)
+        {
+            project.IsSelected = true;
+        }
+    }
+
+    [RelayCommand]
+    public void UnselectAllProjects()
+    {
+        foreach (var project in TestProjects)
+        {
+            project.IsSelected = false;
+        }
     }
 }

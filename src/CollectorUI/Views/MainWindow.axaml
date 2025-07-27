@@ -14,7 +14,6 @@
         Width="600"
         WindowStartupLocation="CenterScreen"
         Title="CollectorUI">
-
     <Design.DataContext>
         <!-- This only sets the DataContext for the previewer in an IDE,
              to set the actual DataContext for runtime, set the DataContext property in code (look at App.axaml.cs) -->
@@ -38,30 +37,87 @@
             </Grid.RowDefinitions>
 
             <StackPanel Grid.Row="0" VerticalAlignment="Center" HorizontalAlignment="Center" Margin="30">
-                <StackPanel Orientation="Horizontal">
-                    <RadioButton Content="Collector" Margin="60,30" IsChecked="True"></RadioButton>
-                    <RadioButton Content="MSBuild" Margin="60,30" x:Name="MSBuildRadioButton"></RadioButton>
+                <!-- Header Area -->
+                <StackPanel Grid.Row="0" Margin="10">
+                    <Grid ColumnDefinitions="*,Auto">
+                        <TextBlock Grid.Column="0" Text="{Binding SolutionPath}" VerticalAlignment="Center"
+                                   TextWrapping="Wrap" TextTrimming="CharacterEllipsis" />
+                        <Button Grid.Column="1" Content="Select Solution" Command="{Binding SelectSolutionCommand}"
+                                Margin="10,0,0,0" />
+                    </Grid>
+                    <StackPanel Orientation="Horizontal" Margin="0,10,0,0">
+                        <Button Content="Select All" Command="{Binding SelectAllProjectsCommand}" Margin="0,0,10,0" />
+                        <Button Content="Unselect All" Command="{Binding UnselectAllProjectsCommand}" />
+                    </StackPanel>
                 </StackPanel>
-                <TextBlock Text="Test Project Folder" Margin="0,0,0,10"/>
-                <StackPanel Orientation="Horizontal" Spacing="5">
-                    <TextBox Width="400" Text="{Binding TestProjectFolder}" IsReadOnly="True" />
-                    <Button Content="Browse" Command="{Binding BrowseFolderCommand}" />
-                </StackPanel>
-                <TextBox Margin="0,10" Watermark="Namespaces to exclude"
-                         IsVisible="{Binding IsChecked, ElementName=MSBuildRadioButton}">
-                </TextBox>
-                <Button Content="Generate Report" Margin="0,10"></Button>
-                <Button Content="Open Report" Margin="0,10" IsVisible="False"></Button>
+
+                <!-- Content Area -->
+                <ScrollViewer Grid.Row="1" Margin="10,0,10,10">
+                    <ItemsControl ItemsSource="{Binding TestProjects}">
+                        <ItemsControl.ItemTemplate>
+                            <DataTemplate>
+                                <Expander Header="{Binding Name}" Margin="0,0,0,5">
+                                    <Grid RowDefinitions="Auto,*">
+                                        <CheckBox Grid.Row="0" IsChecked="{Binding IsSelected}"
+                                                  Content="Include in Analysis" Margin="0,5,0,10" />
+                                        <TabControl Grid.Row="1">
+                                            <TabItem Header="Project Namespaces">
+                                                <TreeView>
+                                                    <TreeViewItem Header="Namespaces" IsExpanded="True">
+                                                        <ItemsControl ItemsSource="{Binding Namespaces}">
+                                                            <ItemsControl.ItemTemplate>
+                                                                <DataTemplate>
+                                                                    <TextBlock Text="{Binding Name}" Margin="0,2" />
+                                                                </DataTemplate>
+                                                            </ItemsControl.ItemTemplate>
+                                                        </ItemsControl>
+                                                    </TreeViewItem>
+                                                </TreeView>
+                                            </TabItem>
+                                            <TabItem Header="Dependencies">
+                                                <TreeView>
+                                                    <TreeViewItem Header="Project Dependencies" IsExpanded="True">
+                                                        <ItemsControl ItemsSource="{Binding Dependencies}">
+                                                            <ItemsControl.ItemTemplate>
+                                                                <DataTemplate>
+                                                                    <Expander Header="{Binding Name}" Margin="0,2">
+                                                                        <TreeView>
+                                                                            <TreeViewItem Header="Namespaces"
+                                                                                IsExpanded="True">
+                                                                                <ItemsControl
+                                                                                    ItemsSource="{Binding Namespaces}">
+                                                                                    <ItemsControl.ItemTemplate>
+                                                                                        <DataTemplate>
+                                                                                            <TextBlock
+                                                                                                Text="{Binding Name}"
+                                                                                                Margin="0,2" />
+                                                                                        </DataTemplate>
+                                                                                    </ItemsControl.ItemTemplate>
+                                                                                </ItemsControl>
+                                                                            </TreeViewItem>
+                                                                        </TreeView>
+                                                                    </Expander>
+                                                                </DataTemplate>
+                                                            </ItemsControl.ItemTemplate>
+                                                        </ItemsControl>
+                                                    </TreeViewItem>
+                                                </TreeView>
+                                            </TabItem>
+                                        </TabControl>
+                                    </Grid>
+                                </Expander>
+                            </DataTemplate>
+                        </ItemsControl.ItemTemplate>
+                    </ItemsControl>
+                </ScrollViewer>
+
+                <!-- Status Bar -->
+                <Grid Grid.Row="2" Background="#f0f0f0">
+                    <TextBlock Text="{Binding StatusMessage}" Margin="10,5" />
+                    <ProgressBar IsIndeterminate="True" IsVisible="{Binding IsBusy}"
+                                 VerticalAlignment="Center" Height="2" />
+                </Grid>
             </StackPanel>
-            <!-- ScrollViewer (Footer Area) -->
-            <ScrollViewer Grid.Row="1" VerticalAlignment="Stretch" HorizontalAlignment="Stretch"
-                          VerticalScrollBarVisibility="Auto" Margin="10">
-                <TextBox
-                    Text="{Binding StatusText}"
-                    AcceptsReturn="True"
-                    IsReadOnly="True"
-                    TextWrapping="Wrap" />
-            </ScrollViewer>
         </Grid>
     </Grid>
 </Window>
