@@ -57,54 +57,19 @@
                         <ItemsControl.ItemTemplate>
                             <DataTemplate>
                                 <Expander Header="{Binding Name}" Margin="0,0,0,5">
-                                    <Grid RowDefinitions="Auto,*">
-                                        <CheckBox Grid.Row="0" IsChecked="{Binding IsSelected}"
-                                                  Content="Include in Analysis" Margin="0,5,0,10" />
-                                        <TabControl Grid.Row="1">
-                                            <TabItem Header="Project Namespaces">
-                                                <TreeView>
-                                                    <TreeViewItem Header="Namespaces" IsExpanded="True">
-                                                        <ItemsControl ItemsSource="{Binding Namespaces}">
-                                                            <ItemsControl.ItemTemplate>
-                                                                <DataTemplate>
-                                                                    <TextBlock Text="{Binding Name}" Margin="0,2" />
-                                                                </DataTemplate>
-                                                            </ItemsControl.ItemTemplate>
-                                                        </ItemsControl>
-                                                    </TreeViewItem>
-                                                </TreeView>
-                                            </TabItem>
-                                            <TabItem Header="Dependencies">
-                                                <TreeView>
-                                                    <TreeViewItem Header="Project Dependencies" IsExpanded="True">
-                                                        <ItemsControl ItemsSource="{Binding Dependencies}">
-                                                            <ItemsControl.ItemTemplate>
-                                                                <DataTemplate>
-                                                                    <Expander Header="{Binding Name}" Margin="0,2">
-                                                                        <TreeView>
-                                                                            <TreeViewItem Header="Namespaces"
-                                                                                IsExpanded="True">
-                                                                                <ItemsControl
-                                                                                    ItemsSource="{Binding Namespaces}">
-                                                                                    <ItemsControl.ItemTemplate>
-                                                                                        <DataTemplate>
-                                                                                            <TextBlock
-                                                                                                Text="{Binding Name}"
-                                                                                                Margin="0,2" />
-                                                                                        </DataTemplate>
-                                                                                    </ItemsControl.ItemTemplate>
-                                                                                </ItemsControl>
-                                                                            </TreeViewItem>
-                                                                        </TreeView>
-                                                                    </Expander>
-                                                                </DataTemplate>
-                                                            </ItemsControl.ItemTemplate>
-                                                        </ItemsControl>
-                                                    </TreeViewItem>
-                                                </TreeView>
-                                            </TabItem>
-                                        </TabControl>
-                                    </Grid>
+                                    <StackPanel>
+                                        <CheckBox IsChecked="{Binding IsSelected}" Content="Incluir projeto na análise" Margin="0,5,0,10" />
+                                        <TreeView ItemsSource="{Binding NamespaceTree}">
+                                            <TreeView.ItemTemplate>
+                                                <TreeDataTemplate ItemsSource="{Binding Children}">
+                                                    <StackPanel Orientation="Horizontal">
+                                                        <CheckBox IsChecked="{Binding IsChecked, Mode=TwoWay}" />
+                                                        <TextBlock Text="{Binding Name}" Margin="5,0,0,0" />
+                                                    </StackPanel>
+                                                </TreeDataTemplate>
+                                            </TreeView.ItemTemplate>
+                                        </TreeView>
+                                    </StackPanel>
                                 </Expander>
                             </DataTemplate>
                         </ItemsControl.ItemTemplate>

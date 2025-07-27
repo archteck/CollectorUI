@@ -99,4 +99,16 @@ public partial class MainWindowViewModel : ViewModelBase
             project.IsSelected = false;
         }
     }
+
+    /// <summary>
+    /// Propriedade auxiliar para expor a árvore de namespaces do projeto selecionado.
+    /// </summary>
+    public ObservableCollection<NamespaceNodeViewModel>? SelectedProjectNamespaceTree
+    {
+        get
+        {
+            var selected = TestProjects.FirstOrDefault(p => p.IsSelected);
+            return selected is not null ? new ObservableCollection<NamespaceNodeViewModel>(selected.GetNamespaceTree()) : null;
+        }
+    }
 }

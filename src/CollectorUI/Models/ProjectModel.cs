@@ -3,6 +3,8 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Xml.Linq;
+using CollectorUI.ViewModels;
+using System.Collections.ObjectModel;
 
 namespace CollectorUI.Models;
 
@@ -15,6 +17,11 @@ public class ProjectModel
     public List<ProjectModel> Dependencies { get; set; } = new List<ProjectModel>();
     public List<NamespaceModel> Namespaces { get; set; } = new List<NamespaceModel>();
     public bool IsSelected { get; set; } = true;
+
+    /// <summary>
+    /// Árvore de namespaces para binding no XAML.
+    /// </summary>
+    public ObservableCollection<NamespaceNodeViewModel> NamespaceTree { get; }
 
     private static readonly char[] s_separator = new[] { '\r', '\n' };
 
@@ -75,6 +82,7 @@ public class ProjectModel
 
             // Parse namespaces from source files
             project.Namespaces = ExtractNamespaces(projectPath);
+            project.BuildNamespaceTree();
         }
         catch (Exception ex)
         {
@@ -134,5 +142,55 @@ public class ProjectModel
             .OrderBy(ns => ns)
             .Select(ns => new NamespaceModel { Name = ns })
             .ToList();
+    }
+
+    /// <summary>
+    /// Constrói a árvore de namespaces deste projeto para uso em TreeView.
+    /// </summary>
+    public List<NamespaceNodeViewModel> GetNamespaceTree()
+    {
+        // Agrupa namespaces por hierarquia (ex: Api, Api.External, Api.External.Fake)
+        var rootNodes = new Dictionary<string, NamespaceNodeViewModel>();
+        foreach (var ns in Namespaces.Where(n => n.Name is not null))
+        {
+            var parts = ns.Name!.Split('.');
+            NamespaceNodeViewModel? current = null;
+            string currentPath = string.Empty;
+            for (int i = 0; i < parts.Length; i++)
+            {
+                currentPath = i == 0 ? parts[0] : $"{currentPath}.{parts[i]}";
+                if (i == 0)
+                {
+                    if (!rootNodes.TryGetValue(parts[0], out var root))
+                    {
+                        root = new NamespaceNodeViewModel(parts[0]);
+                        rootNodes[parts[0]] = root;
+                    }
+                    current = root;
+                }
+                else if (current is not null)
+                {
+                    var child = current.Children.FirstOrDefault(c => c.Name == currentPath);
+                    if (child is null)
+                    {
+                        child = new NamespaceNodeViewModel(currentPath);
+                        current.Children.Add(child);
+                    }
+                    current = child;
+                }
+            }
+        }
+        return rootNodes.Values.ToList();
+    }
+
+    public ProjectModel() => NamespaceTree = new ObservableCollection<NamespaceNodeViewModel>();
+
+    public void BuildNamespaceTree()
+    {
+        NamespaceTree.Clear();
+        foreach (var node in GetNamespaceTree())
+        {
+            NamespaceTree.Add(node);
+        }
     }
 }
