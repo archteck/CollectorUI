@@ -25,6 +25,7 @@
         <Grid.RowDefinitions>
             <RowDefinition Height="30" />
             <RowDefinition Height="*" />
+            <RowDefinition Height="Auto" />
         </Grid.RowDefinitions>
 
         <!-- Title Bar with Custom Window Controls -->
@@ -72,14 +73,14 @@
                         </TabControl.ContentTemplate>
                     </TabControl>
                 </ScrollViewer>
-
-                <!-- Status Bar -->
-                <Grid Grid.Row="2" Background="#f0f0f0">
-                    <TextBlock Text="{Binding StatusMessage}" Margin="10,5" Foreground="Black" />
-                    <ProgressBar IsIndeterminate="True" IsVisible="{Binding IsBusy}"
-                                 VerticalAlignment="Center" Height="2" />
-                </Grid>
             </StackPanel>
+        </Grid>
+
+        <!-- Status Bar / Footer -->
+        <Grid Grid.Row="2" Background="#f0f0f0">
+            <TextBlock Text="{Binding StatusMessage}" Margin="10,5" Foreground="Black" />
+            <ProgressBar IsIndeterminate="True" IsVisible="{Binding IsBusy}"
+                         VerticalAlignment="Center" Height="2" />
         </Grid>
     </Grid>
 </Window>
