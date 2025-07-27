@@ -46,13 +46,13 @@ private Path? _maximizeIcon;
     protected override void OnResized(WindowResizedEventArgs e)
     {
         base.OnResized(e);
-        if (e.ClientSize.Height <= 700)
+        if (e.ClientSize.Height <= 1000)
         {
-            Height = 700;
+            Height = 1000;
         }
-        if (e.ClientSize.Width <= 600)
+        if (e.ClientSize.Width <= 1000)
         {
-            Width = 600;
+            Width = 1000;
         }
     }
     private void TitleBar_PointerPressed(object? sender, PointerPressedEventArgs e)

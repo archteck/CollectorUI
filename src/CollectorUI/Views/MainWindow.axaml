@@ -53,12 +53,12 @@
                 </StackPanel>
 
                 <!-- Content Area -->
-                <ScrollViewer Grid.Row="1" Margin="10,0,10,10">
+                <ScrollViewer Grid.Row="1" Margin="10,0,10,10" Width="900">
                     <ItemsControl ItemsSource="{Binding TestProjects}">
                         <ItemsControl.ItemTemplate>
                             <DataTemplate>
                                 <Expander Header="{Binding Name}" Margin="0,0,0,5">
-                                    <StackPanel>
+                                    <StackPanel Width="900">
                                         <CheckBox IsChecked="{Binding IsSelected}" Content="Incluir projeto na análise" Margin="0,5,0,10" />
                                         <TreeDataGrid Source="{Binding Source}" />
                                     </StackPanel>
