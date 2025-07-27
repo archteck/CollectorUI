@@ -75,7 +75,7 @@
 
                 <!-- Status Bar -->
                 <Grid Grid.Row="2" Background="#f0f0f0">
-                    <TextBlock Text="{Binding StatusMessage}" Margin="10,5" />
+                    <TextBlock Text="{Binding StatusMessage}" Margin="10,5" Foreground="Black" />
                     <ProgressBar IsIndeterminate="True" IsVisible="{Binding IsBusy}"
                                  VerticalAlignment="Center" Height="2" />
                 </Grid>
