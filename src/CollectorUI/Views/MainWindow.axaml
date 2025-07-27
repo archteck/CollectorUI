@@ -2,6 +2,7 @@
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:vm="using:CollectorUI.ViewModels"
         xmlns:controls="using:CollectorUI.Controls"
+        xmlns:avalonia="clr-namespace:Avalonia.Controls;assembly=Avalonia.Controls.DataGrid"
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         mc:Ignorable="d" d:DesignWidth="800" d:DesignHeight="450"
@@ -10,8 +11,8 @@
         Icon="/Assets/avalonia-logo.ico"
         SystemDecorations="BorderOnly"
         WindowState="Normal"
-        Height="600"
-        Width="600"
+        Height="1000"
+        Width="1000"
         WindowStartupLocation="CenterScreen"
         Title="CollectorUI">
     <Design.DataContext>
@@ -59,21 +60,7 @@
                                 <Expander Header="{Binding Name}" Margin="0,0,0,5">
                                     <StackPanel>
                                         <CheckBox IsChecked="{Binding IsSelected}" Content="Incluir projeto na análise" Margin="0,5,0,10" />
-                                        <TreeView ItemsSource="{Binding NamespaceTree}">
-                                            <TreeView.ItemContainerTheme>
-                                                <ControlTheme TargetType="TreeViewItem" BasedOn="{StaticResource {x:Type TreeViewItem}}">
-                                                    <Setter Property="IsExpanded" Value="True" />
-                                                </ControlTheme>
-                                            </TreeView.ItemContainerTheme>
-                                            <TreeView.ItemTemplate>
-                                                <TreeDataTemplate ItemsSource="{Binding Children}">
-                                                    <StackPanel Orientation="Horizontal">
-                                                        <CheckBox IsChecked="{Binding IsChecked, Mode=TwoWay}" />
-                                                        <TextBlock Text="{Binding Name}" Margin="5,0,0,0" />
-                                                    </StackPanel>
-                                                </TreeDataTemplate>
-                                            </TreeView.ItemTemplate>
-                                        </TreeView>
+                                        <TreeDataGrid Source="{Binding Source}" />
                                     </StackPanel>
                                 </Expander>
                             </DataTemplate>

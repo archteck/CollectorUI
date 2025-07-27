@@ -1,10 +1,8 @@
-﻿using System;
-using System.Collections.Generic;
-using System.IO;
-using System.Linq;
-using System.Xml.Linq;
+﻿using System.Xml.Linq;
 using CollectorUI.ViewModels;
 using System.Collections.ObjectModel;
+using Avalonia.Controls;
+using Avalonia.Controls.Models.TreeDataGrid;
 
 namespace CollectorUI.Models;
 
@@ -13,9 +11,9 @@ public class ProjectModel
     public string? Name { get; set; }
     public string? FullPath { get; set; }
     public bool IsTestProject { get; set; }
-    public List<string> ProjectReferences { get; set; } = new List<string>();
-    public List<ProjectModel> Dependencies { get; set; } = new List<ProjectModel>();
-    public List<NamespaceModel> Namespaces { get; set; } = new List<NamespaceModel>();
+    public List<string> ProjectReferences { get; set; } = [];
+    public List<ProjectModel> Dependencies { get; set; } = [];
+    public List<NamespaceModel> Namespaces { get; set; } = [];
     public bool IsSelected { get; set; } = true;
 
     /// <summary>
@@ -23,15 +21,13 @@ public class ProjectModel
     /// </summary>
     public ObservableCollection<NamespaceNodeViewModel> NamespaceTree { get; }
 
-    private static readonly char[] s_separator = new[] { '\r', '\n' };
+    public HierarchicalTreeDataGridSource<NamespaceNodeViewModel>? Source { get; set; }
+
+    private static readonly char[] s_separator = ['\r', '\n'];
 
     public static ProjectModel FromProjectFile(string projectPath)
     {
-        var project = new ProjectModel
-        {
-            FullPath = projectPath,
-            Name = Path.GetFileNameWithoutExtension(projectPath)
-        };
+        var project = new ProjectModel { FullPath = projectPath, Name = Path.GetFileNameWithoutExtension(projectPath) };
 
         try
         {
@@ -41,9 +37,9 @@ public class ProjectModel
             // Check if it's a test project based on naming convention
             if (project.Name != null)
             {
-                project.IsTestProject = project.Name.EndsWith(".Tests",  StringComparison.OrdinalIgnoreCase) ||
-                                        project.Name.EndsWith(".Test",  StringComparison.OrdinalIgnoreCase) ||
-                                        project.Name.EndsWith(".Testing",  StringComparison.OrdinalIgnoreCase) ||
+                project.IsTestProject = project.Name.EndsWith(".Tests", StringComparison.OrdinalIgnoreCase) ||
+                                        project.Name.EndsWith(".Test", StringComparison.OrdinalIgnoreCase) ||
+                                        project.Name.EndsWith(".Testing", StringComparison.OrdinalIgnoreCase) ||
                                         project.Name.Contains("Test");
             }
 
@@ -74,7 +70,8 @@ public class ProjectModel
                     var includePath = projectRef.Attribute("Include")?.Value;
                     if (!string.IsNullOrEmpty(includePath))
                     {
-                        var fullPath = Path.GetFullPath(Path.Combine(Path.GetDirectoryName(projectPath) ?? string.Empty, includePath));
+                        var fullPath = Path.GetFullPath(Path.Combine(Path.GetDirectoryName(projectPath) ?? string.Empty,
+                            includePath));
                         project.ProjectReferences.Add(fullPath);
                     }
                 }
@@ -114,7 +111,7 @@ public class ProjectModel
 
         if (projectDir == null)
         {
-            return new List<NamespaceModel>();
+            return [];
         }
 
         // Find all .cs files in the project directory and subdirectories
@@ -124,7 +121,8 @@ public class ProjectModel
             {
                 var content = File.ReadAllText(file);
                 var nsLine = content.Split(s_separator, StringSplitOptions.RemoveEmptyEntries)
-                    .FirstOrDefault(line => line.TrimStart().StartsWith("namespace ",  StringComparison.OrdinalIgnoreCase));
+                    .FirstOrDefault(line =>
+                        line.TrimStart().StartsWith("namespace ", StringComparison.OrdinalIgnoreCase));
 
                 if (nsLine != null)
                 {
@@ -166,6 +164,7 @@ public class ProjectModel
                         root = new NamespaceNodeViewModel(parts[0]);
                         rootNodes[parts[0]] = root;
                     }
+
                     current = root;
                 }
                 else if (current is not null)
@@ -176,31 +175,35 @@ public class ProjectModel
                         child = new NamespaceNodeViewModel(currentPath);
                         current.Children.Add(child);
                     }
+
                     current = child;
                 }
             }
         }
+
         return rootNodes.Values.ToList();
     }
 
-    public ProjectModel() => NamespaceTree = new ObservableCollection<NamespaceNodeViewModel>();
-
-    private static void ExpandAll(NamespaceNodeViewModel node)
-    {
-        node.IsExpanded = true;
-        foreach (var child in node.Children)
-        {
-            ExpandAll(child);
-        }
-    }
+    public ProjectModel() => NamespaceTree = [];
 
     private void BuildNamespaceTree()
     {
         NamespaceTree.Clear();
         foreach (var node in GetNamespaceTree())
         {
-            ExpandAll(node);
             NamespaceTree.Add(node);
         }
+
+        Source = new HierarchicalTreeDataGridSource<NamespaceNodeViewModel>(NamespaceTree)
+        {
+            Columns =
+            {
+                new CheckBoxColumn<NamespaceNodeViewModel>("Selected", x => x.IsChecked,
+                    (x, value) => x.IsChecked = value),
+                new HierarchicalExpanderColumn<NamespaceNodeViewModel>(
+                    new TextColumn<NamespaceNodeViewModel, string>
+                        ("Namespace", x => x.Name), x => x.Children)
+            },
+        };
     }
 }
