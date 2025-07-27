@@ -1,0 +1,67 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:vm="using:CollectorUI.ViewModels"
+        xmlns:controls="using:CollectorUI.Controls"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        mc:Ignorable="d" d:DesignWidth="800" d:DesignHeight="450"
+        x:Class="CollectorUI.Views.MainWindow"
+        x:DataType="vm:MainWindowViewModel"
+        Icon="/Assets/avalonia-logo.ico"
+        SystemDecorations="BorderOnly"
+        WindowState="Normal"
+        Height="600"
+        Width="600"
+        WindowStartupLocation="CenterScreen"
+        Title="CollectorUI">
+
+    <Design.DataContext>
+        <!-- This only sets the DataContext for the previewer in an IDE,
+             to set the actual DataContext for runtime, set the DataContext property in code (look at App.axaml.cs) -->
+        <vm:MainWindowViewModel />
+    </Design.DataContext>
+    <Grid>
+        <Grid.RowDefinitions>
+            <RowDefinition Height="30" />
+            <RowDefinition Height="*" />
+        </Grid.RowDefinitions>
+
+        <!-- Title Bar with Custom Window Controls -->
+        <controls:TitleBar Grid.Row="0"
+                           WindowTitle="{Binding Title, RelativeSource={RelativeSource AncestorType=Window}}" />
+
+        <!-- Main Content -->
+        <Grid Grid.Row="1">
+            <Grid.RowDefinitions>
+                <RowDefinition Height="Auto" />
+                <RowDefinition Height="*" />
+            </Grid.RowDefinitions>
+
+            <StackPanel Grid.Row="0" VerticalAlignment="Center" HorizontalAlignment="Center" Margin="30">
+                <StackPanel Orientation="Horizontal">
+                    <RadioButton Content="Collector" Margin="60,30" IsChecked="True"></RadioButton>
+                    <RadioButton Content="MSBuild" Margin="60,30" x:Name="MSBuildRadioButton"></RadioButton>
+                </StackPanel>
+                <TextBlock Text="Test Project Folder" Margin="0,0,0,10"/>
+                <StackPanel Orientation="Horizontal" Spacing="5">
+                    <TextBox Width="400" Text="{Binding TestProjectFolder}" IsReadOnly="True" />
+                    <Button Content="Browse" Command="{Binding BrowseFolderCommand}" />
+                </StackPanel>
+                <TextBox Margin="0,10" Watermark="Namespaces to exclude"
+                         IsVisible="{Binding IsChecked, ElementName=MSBuildRadioButton}">
+                </TextBox>
+                <Button Content="Generate Report" Margin="0,10"></Button>
+                <Button Content="Open Report" Margin="0,10" IsVisible="False"></Button>
+            </StackPanel>
+            <!-- ScrollViewer (Footer Area) -->
+            <ScrollViewer Grid.Row="1" VerticalAlignment="Stretch" HorizontalAlignment="Stretch"
+                          VerticalScrollBarVisibility="Auto" Margin="10">
+                <TextBox
+                    Text="{Binding StatusText}"
+                    AcceptsReturn="True"
+                    IsReadOnly="True"
+                    TextWrapping="Wrap" />
+            </ScrollViewer>
+        </Grid>
+    </Grid>
+</Window>
