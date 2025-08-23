@@ -47,29 +47,8 @@ public partial class NamespaceNodeViewModel : ObservableObject
         {
             child.IsChecked = value;
         }
-
-        // Atualiza os pais com base no estado dos filhos:
-        // - sem tri-state: pai fica checked se ALGUM filho estiver checked; fica unchecked se NENHUM estiver checked.
-        UpdateAncestorsFromChildren();
     }
 
-    private void UpdateAncestorsFromChildren()
-    {
-        var p = Parent;
-        while (p is not null)
-        {
-            var anyChecked = p.Children.Any(c => c.IsChecked);
-            var desired = anyChecked;
-
-            if (p.IsChecked != desired)
-            {
-                p._suppressChildCascade = true;
-                p.IsChecked = desired;
-            }
-
-            p = p.Parent;
-        }
-    }
 
     /// <summary>
     /// Cria um novo nó de namespace.
