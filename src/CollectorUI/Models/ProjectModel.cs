@@ -150,7 +150,7 @@ public class ProjectModel
 
                 if (nsLine != null)
                 {
-                    var ns = nsLine.TrimStart().Substring(10).TrimEnd(';', ' ', '{');
+                    var ns = nsLine.TrimStart()[10..].TrimEnd(';', ' ', '{');
                     namespaces.Add(ns);
                 }
             }

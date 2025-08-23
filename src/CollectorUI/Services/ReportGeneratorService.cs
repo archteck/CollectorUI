@@ -29,12 +29,12 @@ public static class ReportGeneratorService
             string include = includeList.Aggregate("", (current, includeListItem) => current + $"[*]{includeListItem}.*,");
             if (!string.IsNullOrEmpty(include))
             {
-                include = include.Substring(0, include.Length - 1);
+                include = include[..^1];
             }
             string exclude = excludeList.Aggregate("", (current, excludeListItem) => current + $"[*]{excludeListItem}.*,");
             if (!string.IsNullOrEmpty(exclude))
             {
-                exclude = exclude.Substring(0, exclude.Length - 1);
+                exclude = exclude[..^1];
             }
             //criar cobertura para cada projecto
            var (success, indexPath, _) = await CreateCoberturaAndReportAsync(testProject.FullPath!, include, exclude);
@@ -89,11 +89,11 @@ public static class ReportGeneratorService
 
         if (!string.IsNullOrWhiteSpace(include))
         {
-            arg += $" -p:Include=\"{include}\"";
+            arg += $" /p:Include=\"{include}\"";
         }
         if (!string.IsNullOrWhiteSpace(exclude))
         {
-            arg += $" -p:Exclude=\"{exclude}\"";
+            arg += $" /p:Exclude=\"{exclude}\"";
         }
         // Setup the process start info
         var psi = new ProcessStartInfo
@@ -156,7 +156,6 @@ public static class ReportGeneratorService
             return (false, null, $"Exception during build: {ex.Message}");
         }
     }
-    // ... existing code ...
     private static async Task<string> RunCommand(string file, params string[] args)
     {
         var psi = new ProcessStartInfo
