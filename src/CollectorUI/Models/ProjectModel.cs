@@ -221,7 +221,7 @@ public class ProjectModel
                     var child = current.Children.FirstOrDefault(c => c.Name == currentPath);
                     if (child is null)
                     {
-                        child = new NamespaceNodeViewModel(currentPath);
+                        child = new NamespaceNodeViewModel(currentPath) { Parent = current };
                         current.Children.Add(child);
                     }
 
