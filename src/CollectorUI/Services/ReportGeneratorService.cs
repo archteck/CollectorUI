@@ -1,5 +1,6 @@
 ﻿using System.Diagnostics;
 using CollectorUI.Models;
+using System.Text.RegularExpressions;
 
 namespace CollectorUI.Services;
 
@@ -113,16 +114,44 @@ public static class ReportGeneratorService
             string error = await process.StandardError.ReadToEndAsync();
             await process.WaitForExitAsync();
 
-            return process.ExitCode == 0
-                ? $"Build succeeded:\n{output}"
-                : $"Build failed:\n{error}";
+            if (process.ExitCode != 0)
+            {
+                return $"Build failed:\n{error}";
+            }
+
+            // Encontrar o caminho completo para coverage.cobertura.xml no output
+            if (TryExtractCoberturaPath(output, out var coberturaPath))
+            {
+                // Garantir que o reportgenerator está instalado
+                var ensured = await EnsureReportGeneratorInstalledAsync();
+                if (!ensured.success)
+                {
+                    return $"Failed to ensure reportgenerator: {ensured.message}";
+                }
+
+                // Executar reportgenerator
+                var folderPath = Path.GetDirectoryName(coberturaPath)!;
+                var targetDir = Path.Combine(folderPath, "coveragereport");
+
+                var rgOutput = await RunCommand(
+                    "reportgenerator",
+                    $"-reports:{coberturaPath}",
+                    $"-targetdir:{targetDir}",
+                    "-reporttypes:Html"
+                );
+
+                return rgOutput;
+            }
+
+            // Se não encontrarmos o caminho, devolvemos o output original
+            return $"Build succeeded:\n{output}";
         }
         catch (Exception ex)
         {
             return $"Exception during build: {ex.Message}";
         }
     }
-
+    // ... existing code ...
     private static async Task<string> RunCommand(string file, params string[] args)
     {
         var psi = new ProcessStartInfo
@@ -180,5 +209,57 @@ public static class ReportGeneratorService
         return string.IsNullOrWhiteSpace(stderr)
             ? stdout
             : $"{stdout}\nERROR:\n{stderr}";
+    }
+
+    private static bool TryExtractCoberturaPath(string output, out string path)
+    {
+        // Procura caminhos absolutos que terminem em coverage.cobertura.xml (Windows e Unix-like)
+        var pattern = @"([A-Za-z]:\\[^\r\n]*?coverage\.cobertura\.xml)|(/[^:\r\n]*?/coverage\.cobertura\.xml)";
+        var match = Regex.Matches(output, pattern, RegexOptions.IgnoreCase)
+                         .Cast<Match>()
+                         .FirstOrDefault(m => m.Success);
+
+        if (match != null && match.Success)
+        {
+            path = match.Value.Trim();
+            return true;
+        }
+
+        // Fallback: tentar compor o caminho esperado a partir do output da pasta de TestResults
+        // Ex.: .../TestResults/<hash>/coverage.cobertura.xml
+        var dirHint = Regex.Matches(output, @"(TestResults[\\/][^\r\n]+)", RegexOptions.IgnoreCase)
+                           .Cast<Match>()
+                           .Select(m => m.Value)
+                           .FirstOrDefault();
+
+        if (!string.IsNullOrWhiteSpace(dirHint))
+        {
+            var possible = Path.Combine(dirHint.Replace('\\', Path.DirectorySeparatorChar).Replace('/', Path.DirectorySeparatorChar), "coverage.cobertura.xml");
+            if (File.Exists(possible))
+            {
+                path = Path.GetFullPath(possible);
+                return true;
+            }
+        }
+
+        path = string.Empty;
+        return false;
+    }
+
+    private static async Task<(bool success, string message)> EnsureReportGeneratorInstalledAsync()
+    {
+        var listOut = await RunCommand("dotnet", "tool", "list", "-g");
+        if (listOut.Contains("dotnet-reportgenerator-globaltool", StringComparison.OrdinalIgnoreCase))
+        {
+            return (true, "Already installed");
+        }
+
+        var installOut = await RunCommand("dotnet", "tool", "install", "-g", "dotnet-reportgenerator-globaltool");
+
+        // Se a instalação falhar, o RunCommand já inclui stderr no retorno
+        // Vamos validar instalação novamente para confirmar
+        var postCheck = await RunCommand("dotnet", "tool", "list", "-g");
+        var ok = postCheck.Contains("dotnet-reportgenerator-globaltool", StringComparison.OrdinalIgnoreCase);
+        return (ok, ok ? "Installed" : installOut);
     }
 }
