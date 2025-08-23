@@ -84,27 +84,34 @@ public static class ReportGeneratorService
     }
     private static async Task<(bool success, string? indexPath, string message)> CreateCoberturaAndReportAsync(string projectPath, string include, string exclude)
     {
-        var arg =
-            $"test \"{projectPath}\" --no-build -p:TestingPlatformDotnetTestSupport=false -p:UseMicrosoftTestingPlatformRunner=false /p:CollectCoverage=true /p:CoverletOutputFormat=cobertura /p:CoverletOutput=./TestResults/";
-
-        if (!string.IsNullOrWhiteSpace(include))
-        {
-            arg += $" /p:Include=\"{include}\"";
-        }
-        if (!string.IsNullOrWhiteSpace(exclude))
-        {
-            arg += $" /p:Exclude=\"{exclude}\"";
-        }
         // Setup the process start info
         var psi = new ProcessStartInfo
         {
             FileName = "dotnet",
-            Arguments = arg,
             RedirectStandardOutput = true,
             RedirectStandardError = true,
             UseShellExecute = false,
             CreateNoWindow = true
         };
+
+        // dotnet test args
+        psi.ArgumentList.Add("test");
+        psi.ArgumentList.Add(projectPath);
+        psi.ArgumentList.Add("--no-build");
+        psi.ArgumentList.Add("-p:TestingPlatformDotnetTestSupport=false");
+        psi.ArgumentList.Add("-p:UseMicrosoftTestingPlatformRunner=false");
+        psi.ArgumentList.Add("/p:CollectCoverage=true");
+        psi.ArgumentList.Add("/p:CoverletOutputFormat=cobertura");
+        psi.ArgumentList.Add("/p:CoverletOutput=./TestResults/");
+
+        if (!string.IsNullOrWhiteSpace(include))
+        {
+            psi.ArgumentList.Add($"/p:Include=\"{include}\"");
+        }
+        if (!string.IsNullOrWhiteSpace(exclude))
+        {
+            psi.ArgumentList.Add($"/p:Exclude=\"{exclude}\"");
+        }
 
         try
         {
