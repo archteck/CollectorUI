@@ -37,7 +37,11 @@ public static class ReportGeneratorService
                 exclude = exclude.Substring(0, exclude.Length - 1);
             }
             //criar cobertura para cada projecto
-           await CreateCoberturaAsync(testProject.FullPath!, include, exclude);
+           var (success, indexPath, _) = await CreateCoberturaAndReportAsync(testProject.FullPath!, include, exclude);
+           if (success && !string.IsNullOrWhiteSpace(indexPath))
+           {
+               testProject.CoverageReportIndexPath = indexPath;
+           }
         }
 
         await Task.Delay(1);
@@ -78,7 +82,7 @@ public static class ReportGeneratorService
             return $"Exception during build: {ex.Message}";
         }
     }
-    private static async Task<string> CreateCoberturaAsync(string projectPath, string include, string exclude)
+    private static async Task<(bool success, string? indexPath, string message)> CreateCoberturaAndReportAsync(string projectPath, string include, string exclude)
     {
         var arg =
             $"test \"{projectPath}\" --no-build -p:TestingPlatformDotnetTestSupport=false -p:UseMicrosoftTestingPlatformRunner=false /p:CollectCoverage=true /p:CoverletOutputFormat=cobertura /p:CoverletOutput=./TestResults/";
@@ -107,7 +111,7 @@ public static class ReportGeneratorService
             using var process = Process.Start(psi);
             if (process == null)
             {
-                return "Failed to start build process.";
+                return (false, null, "Failed to start build process.");
             }
 
             string output = await process.StandardOutput.ReadToEndAsync();
@@ -116,7 +120,7 @@ public static class ReportGeneratorService
 
             if (process.ExitCode != 0)
             {
-                return $"Build failed:\n{error}";
+                return (false, null, $"Build failed:\n{error}");
             }
 
             // Encontrar o caminho completo para coverage.cobertura.xml no output
@@ -126,7 +130,7 @@ public static class ReportGeneratorService
                 var ensured = await EnsureReportGeneratorInstalledAsync();
                 if (!ensured.success)
                 {
-                    return $"Failed to ensure reportgenerator: {ensured.message}";
+                    return (false, null, $"Failed to ensure reportgenerator: {ensured.message}");
                 }
 
                 // Executar reportgenerator
@@ -140,15 +144,16 @@ public static class ReportGeneratorService
                     "-reporttypes:Html"
                 );
 
-                return rgOutput;
+                var indexPath = Path.Combine(targetDir, "index.html");
+                return (true, indexPath, rgOutput);
             }
 
-            // Se não encontrarmos o caminho, devolvemos o output original
-            return $"Build succeeded:\n{output}";
+            // Se não encontrarmos o caminho, devolvemos o output original como mensagem
+            return (false, null, $"Build succeeded but coverage path not found:\n{output}");
         }
         catch (Exception ex)
         {
-            return $"Exception during build: {ex.Message}";
+            return (false, null, $"Exception during build: {ex.Message}");
         }
     }
     // ... existing code ...

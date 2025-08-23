@@ -110,10 +110,24 @@ public partial class MainWindowViewModel : ViewModelBase
     [RelayCommand]
     public async Task GenerateCoverage()
     {
-        // TODO: Implementar lógica de geração de cobertura
-        await ReportGeneratorService.CreateReportAsync(SolutionPath, TestProjects.ToList());
-        await Task.Delay(500);
-        StatusMessage = "Cobertura gerada (simulado).";
+        try
+        {
+            IsBusy = true;
+            StatusMessage = "Generating coverage reports...";
+            var result = await ReportGeneratorService.CreateReportAsync(SolutionPath, TestProjects.ToList());
+
+            // Força o ItemsControl a atualizar para refletir HasCoverageReport/paths
+            TestProjects = new ObservableCollection<ProjectModel>(TestProjects);
+            StatusMessage = result;
+        }
+        catch (Exception ex)
+        {
+            StatusMessage = $"Error generating coverage: {ex.Message}";
+        }
+        finally
+        {
+            IsBusy = false;
+        }
     }
 
     partial void OnTestProjectsChanged(ObservableCollection<ProjectModel> value) => UpdateCanGenerateCoverage();
@@ -131,6 +145,31 @@ public partial class MainWindowViewModel : ViewModelBase
         {
             var selected = TestProjects.FirstOrDefault(p => p.IsSelected);
             return selected is not null ? new ObservableCollection<NamespaceNodeViewModel>(selected.GetNamespaceTree()) : null;
+        }
+    }
+
+    [RelayCommand]
+    public void OpenReport(ProjectModel? project)
+    {
+        if (project?.HasCoverageReport == true && System.IO.File.Exists(project.CoverageReportIndexPath))
+        {
+            try
+            {
+                System.Diagnostics.Process.Start(new System.Diagnostics.ProcessStartInfo
+                {
+                    FileName = project.CoverageReportIndexPath,
+                    UseShellExecute = true
+                });
+                StatusMessage = $"Opened report for {project.Name}";
+            }
+            catch (Exception ex)
+            {
+                StatusMessage = $"Failed to open report: {ex.Message}";
+            }
+        }
+        else
+        {
+            StatusMessage = "Report not found for this project.";
         }
     }
 }

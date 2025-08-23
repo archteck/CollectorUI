@@ -16,6 +16,10 @@ public class ProjectModel
     public List<NamespaceModel> Namespaces { get; set; } = [];
     public bool IsSelected { get; set; } = true;
 
+    // Path to generated HTML coverage report (index.html)
+    public string? CoverageReportIndexPath { get; set; }
+    public bool HasCoverageReport => !string.IsNullOrWhiteSpace(CoverageReportIndexPath);
+
     /// <summary>
     /// Árvore de namespaces para binding no XAML.
     /// </summary>

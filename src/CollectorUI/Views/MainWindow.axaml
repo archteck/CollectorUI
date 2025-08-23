@@ -68,6 +68,12 @@
                             <DataTemplate DataType="models:ProjectModel">
                                 <StackPanel Width="900">
                                     <CheckBox IsChecked="{Binding IsSelected}" Content="Incluir projeto na análise" Margin="0,5,0,10" />
+                                    <Button Content="Open Report"
+                                            x:CompileBindings="False"
+                                            Command="{Binding DataContext.OpenReportCommand, RelativeSource={RelativeSource AncestorType=Window}}"
+                                            CommandParameter="{Binding}"
+                                            IsVisible="{Binding HasCoverageReport}"
+                                            Margin="0,0,0,10" />
                                     <TreeDataGrid Source="{Binding Source}" />
                                 </StackPanel>
                             </DataTemplate>
