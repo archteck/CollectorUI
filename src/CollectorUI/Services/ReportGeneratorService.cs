@@ -18,10 +18,20 @@ public static class ReportGeneratorService
         var buildResult = await BuildSolutionAsync(solutionPath);
         if (!buildResult.StartsWith("Build succeeded", StringComparison.OrdinalIgnoreCase))
         {
-            return "Build failed";
+            // Preserve detailed build output to surface the failure reason in the UI
+            return buildResult;
         }
 
-        foreach (var testProject in testProjects.Where(p => p is { IsTestProject: true, IsSelected: true }))
+        var selectedProjects = testProjects.Where(p => p is { IsTestProject: true, IsSelected: true }).ToList();
+        if (selectedProjects.Count == 0)
+        {
+            return "No test projects selected.";
+        }
+
+        int successCount = 0;
+        var failures = new List<string>();
+
+        foreach (var testProject in selectedProjects)
         {
             //include e exclude do que é para in/exc
             var includeList = testProject.GetSelectedNamespaces();
@@ -36,15 +46,34 @@ public static class ReportGeneratorService
             {
                 exclude = exclude[..^1];
             }
+
             //criar cobertura para cada projecto
-           var (success, indexPath, _) = await CreateCoberturaAndReportAsync(testProject.FullPath!, include, exclude);
-           if (success && !string.IsNullOrWhiteSpace(indexPath))
-           {
-               testProject.CoverageReportIndexPath = indexPath;
-           }
+            var (success, indexPath, message) = await CreateCoberturaAndReportAsync(testProject.FullPath!, include, exclude);
+            if (success && !string.IsNullOrWhiteSpace(indexPath))
+            {
+                testProject.CoverageReportIndexPath = indexPath;
+                successCount++;
+            }
+            else
+            {
+                var projectName = string.IsNullOrWhiteSpace(testProject.Name) ? testProject.FullPath : testProject.Name;
+                failures.Add($"{projectName}: {message}");
+            }
         }
 
         await Task.Delay(1);
+
+        if (successCount == 0)
+        {
+            var err = failures.FirstOrDefault() ?? "Unknown error";
+            return $"Failed to generate coverage reports. {err}";
+        }
+
+        if (failures.Count > 0)
+        {
+            return $"Generated {successCount}/{selectedProjects.Count} coverage report(s). Some projects failed. Last error: {failures[^1]}";
+        }
+
         return "Success";
     }
 
