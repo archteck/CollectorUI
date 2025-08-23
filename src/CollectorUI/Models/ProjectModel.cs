@@ -104,6 +104,26 @@ public class ProjectModel
         }
     }
 
+    public IEnumerable<ProjectModel> GetAllDependenciesRecursive()
+    {
+        var visited = new HashSet<ProjectModel>();
+        var stack = new Stack<ProjectModel>(Dependencies);
+
+        while (stack.Count > 0)
+        {
+            var current = stack.Pop();
+            if (visited.Add(current))
+            {
+                foreach (var dep in current.Dependencies)
+                {
+                    stack.Push(dep);
+                }
+            }
+        }
+
+        return visited;
+    }
+
     private static List<NamespaceModel> ExtractNamespaces(string projectPath)
     {
         var namespaces = new HashSet<string>();
@@ -147,11 +167,40 @@ public class ProjectModel
     /// </summary>
     public List<NamespaceNodeViewModel> GetNamespaceTree()
     {
+        // Determina quais namespaces exibir:
+        // - Para projetos de teste: união dos namespaces de todos os projetos referenciados (inclusive transitivos).
+        // - Para projetos normais: os próprios namespaces do projeto.
+        var nsStrings = new HashSet<string>(StringComparer.Ordinal);
+
+        if (IsTestProject)
+        {
+            foreach (var dep in GetAllDependenciesRecursive())
+            {
+                foreach (var depNs in dep.Namespaces)
+                {
+                    if (!string.IsNullOrWhiteSpace(depNs.Name))
+                    {
+                        nsStrings.Add(depNs.Name!);
+                    }
+                }
+            }
+        }
+        else
+        {
+            foreach (var ns in Namespaces)
+            {
+                if (!string.IsNullOrWhiteSpace(ns.Name))
+                {
+                    nsStrings.Add(ns.Name!);
+                }
+            }
+        }
+
         // Agrupa namespaces por hierarquia (ex: Api, Api.External, Api.External.Fake)
         var rootNodes = new Dictionary<string, NamespaceNodeViewModel>();
-        foreach (var ns in Namespaces.Where(n => n.Name is not null))
+        foreach (var ns in nsStrings.OrderBy(x => x))
         {
-            var parts = ns.Name!.Split('.');
+            var parts = ns.Split('.');
             NamespaceNodeViewModel? current = null;
             string currentPath = string.Empty;
             for (int i = 0; i < parts.Length; i++)
@@ -186,7 +235,7 @@ public class ProjectModel
 
     public ProjectModel() => NamespaceTree = [];
 
-    private void BuildNamespaceTree()
+    public void BuildNamespaceTree()
     {
         NamespaceTree.Clear();
         foreach (var node in GetNamespaceTree())
@@ -205,5 +254,61 @@ public class ProjectModel
                         ("Namespace", x => x.Name), x => x.Children)
             },
         };
+    }
+
+    /// <summary>
+    /// Retorna a lista de namespaces selecionados (apenas maiores pais, sem filhos redundantes).
+    /// </summary>
+    public List<string> GetSelectedNamespaces()
+    {
+        var result = new List<string>();
+        foreach (var node in NamespaceTree)
+        {
+            GetSelectedRecursive(node, result);
+        }
+        return result;
+    }
+
+    private static void GetSelectedRecursive(NamespaceNodeViewModel node, List<string> result)
+    {
+        if (node.IsChecked)
+        {
+            result.Add(node.Name);
+        }
+        else
+        {
+            foreach (var child in node.Children)
+            {
+                GetSelectedRecursive(child, result);
+            }
+        }
+    }
+
+    /// <summary>
+    /// Retorna a lista de namespaces não selecionados (apenas maiores pais, sem filhos redundantes).
+    /// </summary>
+    public List<string> GetUnselectedNamespaces()
+    {
+        var result = new List<string>();
+        foreach (var node in NamespaceTree)
+        {
+            GetUnselectedRecursive(node, result);
+        }
+        return result;
+    }
+
+    private static void GetUnselectedRecursive(NamespaceNodeViewModel node, List<string> result)
+    {
+        if (!node.IsChecked)
+        {
+            result.Add(node.Name);
+        }
+        else
+        {
+            foreach (var child in node.Children)
+            {
+                GetUnselectedRecursive(child, result);
+            }
+        }
     }
 }

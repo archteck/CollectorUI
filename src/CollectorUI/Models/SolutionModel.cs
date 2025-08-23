@@ -41,6 +41,12 @@ public class SolutionModel
             project.FindDependencies(solution.Projects);
         }
 
+        // Rebuild namespace trees now that dependencies are known
+        foreach (var project in solution.Projects)
+        {
+            project.BuildNamespaceTree();
+        }
+
         return solution;
     }
 }
