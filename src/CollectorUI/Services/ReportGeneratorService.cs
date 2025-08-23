@@ -31,9 +31,9 @@ public static class ReportGeneratorService
                 include = include.Substring(0, include.Length - 1);
             }
             string exclude = excludeList.Aggregate("", (current, excludeListItem) => current + $"[*]{excludeListItem}.*,");
-            if (!string.IsNullOrEmpty(include))
+            if (!string.IsNullOrEmpty(exclude))
             {
-                exclude = include.Substring(0, include.Length - 1);
+                exclude = exclude.Substring(0, exclude.Length - 1);
             }
             //criar cobertura para cada projecto
            await CreateCoberturaAsync(testProject.FullPath!, include, exclude);

@@ -271,17 +271,36 @@ public class ProjectModel
 
     private static void GetSelectedRecursive(NamespaceNodeViewModel node, List<string> result)
     {
-        if (node.IsChecked)
+        // Se toda a subárvore estiver selecionada, adiciona apenas o pai
+        if (AllDescendantsChecked(node))
         {
             result.Add(node.Name);
+            return;
         }
-        else
+
+        // Caso contrário, desce e coleta apenas os sub-ramos necessários
+        foreach (var child in node.Children)
         {
-            foreach (var child in node.Children)
+            GetSelectedRecursive(child, result);
+        }
+    }
+
+    private static bool AllDescendantsChecked(NamespaceNodeViewModel node)
+    {
+        if (!node.IsChecked)
+        {
+            return false;
+        }
+
+        foreach (var child in node.Children)
+        {
+            if (!AllDescendantsChecked(child))
             {
-                GetSelectedRecursive(child, result);
+                return false;
             }
         }
+
+        return true;
     }
 
     /// <summary>
@@ -299,16 +318,35 @@ public class ProjectModel
 
     private static void GetUnselectedRecursive(NamespaceNodeViewModel node, List<string> result)
     {
-        if (!node.IsChecked)
+        // Se toda a subárvore estiver desmarcada, adiciona apenas o pai
+        if (AllDescendantsUnchecked(node))
         {
             result.Add(node.Name);
+            return;
         }
-        else
+
+        // Caso contrário, desce e coleta apenas os sub-ramos necessários
+        foreach (var child in node.Children)
         {
-            foreach (var child in node.Children)
+            GetUnselectedRecursive(child, result);
+        }
+    }
+
+    private static bool AllDescendantsUnchecked(NamespaceNodeViewModel node)
+    {
+        if (node.IsChecked)
+        {
+            return false;
+        }
+
+        foreach (var child in node.Children)
+        {
+            if (!AllDescendantsUnchecked(child))
             {
-                GetUnselectedRecursive(child, result);
+                return false;
             }
         }
+
+        return true;
     }
 }
