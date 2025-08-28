@@ -1,0 +1,108 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:vm="using:CollectorUI.ViewModels"
+        xmlns:models="using:CollectorUI.Models"
+        xmlns:controls="using:CollectorUI.Controls"
+        xmlns:avalonia="clr-namespace:Avalonia.Controls;assembly=Avalonia.Controls.DataGrid"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        mc:Ignorable="d" d:DesignWidth="800" d:DesignHeight="450"
+        x:Class="CollectorUI.Views.MainWindow"
+        x:DataType="vm:MainWindowViewModel"
+        Icon="/Assets/avalonia-logo.ico"
+        SystemDecorations="BorderOnly"
+        WindowState="Normal"
+        Height="600"
+        Width="600"
+        WindowStartupLocation="CenterScreen"
+        Title="CollectorUI">
+    <Design.DataContext>
+        <!-- This only sets the DataContext for the previewer in an IDE,
+             to set the actual DataContext for runtime, set the DataContext property in code (look at App.axaml.cs) -->
+        <vm:MainWindowViewModel />
+    </Design.DataContext>
+    <Grid>
+        <Grid.RowDefinitions>
+            <RowDefinition Height="30" />
+            <RowDefinition Height="*" />
+            <RowDefinition Height="Auto" />
+        </Grid.RowDefinitions>
+
+        <!-- Title Bar with Custom Window Controls -->
+        <controls:TitleBar Grid.Row="0"
+                           WindowTitle="{Binding Title, RelativeSource={RelativeSource AncestorType=Window}}" />
+
+        <!-- Main Content -->
+        <Grid Grid.Row="1">
+            <Grid.RowDefinitions>
+                <RowDefinition Height="Auto" />
+                <RowDefinition Height="*" />
+            </Grid.RowDefinitions>
+
+            <!-- Header Area -->
+            <StackPanel Grid.Row="0" Margin="30">
+                <Grid ColumnDefinitions="*,Auto">
+                    <TextBlock Grid.Column="0" Text="{Binding SolutionPath}" VerticalAlignment="Center"
+                               TextWrapping="Wrap" TextTrimming="CharacterEllipsis" />
+                    <Button Grid.Column="1" Content="Select Solution" Command="{Binding SelectSolutionCommand}"
+                            Margin="10,0,0,0" />
+                </Grid>
+                <StackPanel Orientation="Horizontal" Margin="0,10,0,0">
+                    <Button Content="Select All" Command="{Binding SelectAllProjectsCommand}" Margin="0,0,10,0" />
+                    <Button Content="Unselect All" Command="{Binding UnselectAllProjectsCommand}" Margin="0,0,10,0" />
+                    <Button Content="Generate Report" Command="{Binding GenerateCoverageCommand}" IsVisible="{Binding CanGenerateCoverage}" />
+                </StackPanel>
+                <Border Margin="0,10,0,0" Background="#FFF8DB" BorderBrush="#E0C200" BorderThickness="1" CornerRadius="4" Padding="10">
+                    <TextBlock Text="Note: Test projects must reference the 'coverlet.msbuild' package to collect code coverage."
+                               Foreground="#6B5900" TextWrapping="Wrap" />
+                </Border>
+            </StackPanel>
+
+            <!-- Content Area -->
+            <TabControl Grid.Row="1" Margin="10,0,10,10" ItemsSource="{Binding TestProjects}">
+                <TabControl.TabStripPlacement>Top</TabControl.TabStripPlacement>
+                <TabControl.ItemTemplate>
+                    <DataTemplate>
+                        <TextBlock Text="{Binding Name}" FontSize="12" />
+                    </DataTemplate>
+                </TabControl.ItemTemplate>
+                <TabControl.ContentTemplate>
+                    <DataTemplate DataType="models:ProjectModel">
+                        <Grid>
+                            <Grid.RowDefinitions>
+                                <RowDefinition Height="Auto" />
+                                <RowDefinition Height="Auto" />
+                                <RowDefinition Height="*" />
+                            </Grid.RowDefinitions>
+
+                            <CheckBox Grid.Row="0"
+                                      IsChecked="{Binding IsSelected}"
+                                      Content="Include project on report"
+                                      Margin="0,5,0,10" />
+
+                            <Button Grid.Row="1"
+                                    Content="Open Report"
+                                    x:CompileBindings="False"
+                                    Command="{Binding DataContext.OpenReportCommand, RelativeSource={RelativeSource AncestorType=Window}}"
+                                    CommandParameter="{Binding}"
+                                    IsVisible="{Binding HasCoverageReport}"
+                                    Margin="0,0,0,10" />
+
+                            <TreeDataGrid Grid.Row="2"
+                                          Source="{Binding Source}"
+                                          HorizontalAlignment="Stretch"
+                                          VerticalAlignment="Stretch" />
+                        </Grid>
+                    </DataTemplate>
+                </TabControl.ContentTemplate>
+            </TabControl>
+        </Grid>
+
+        <!-- Status Bar / Footer -->
+        <Grid Grid.Row="2" Background="#f0f0f0">
+            <TextBlock Text="{Binding StatusMessage}" Margin="10,5" Foreground="Black" />
+            <ProgressBar IsIndeterminate="True" IsVisible="{Binding IsBusy}"
+                         VerticalAlignment="Center" Height="2" />
+        </Grid>
+    </Grid>
+</Window>
