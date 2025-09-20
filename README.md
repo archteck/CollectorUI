@@ -2,7 +2,7 @@
 
 CollectorUI is a cross‑platform desktop application (Windows, macOS, and Linux) built with .NET 9 and C# 13. It simplifies generating and viewing code coverage reports by converting raw coverage outputs into readable HTML via ReportGenerator.
 
-Repository: https://github.com/archteck/CollectorUI
+<img width="835" height="914" alt="image" src="https://github.com/user-attachments/assets/ed471e74-031c-43df-b5e7-a1aa42a2495f" />
 
 ## Features
 
