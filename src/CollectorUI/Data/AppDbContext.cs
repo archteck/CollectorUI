@@ -5,6 +5,7 @@ namespace CollectorUI.Data;
 public class AppDbContext : DbContext
 {
     public DbSet<NamespaceSelection> NamespaceSelections => Set<NamespaceSelection>();
+    public DbSet<AppSetting> AppSettings => Set<AppSetting>();
 
     private static string GetDatabasePath()
     {
@@ -24,10 +25,16 @@ public class AppDbContext : DbContext
         }
     }
 
-    protected override void OnModelCreating(ModelBuilder modelBuilder) =>
+    protected override void OnModelCreating(ModelBuilder modelBuilder)
+    {
         modelBuilder.Entity<NamespaceSelection>()
             .HasIndex(x => new { x.SolutionPath, x.ProjectPath, x.Namespace })
             .IsUnique(false);
+
+        modelBuilder.Entity<AppSetting>()
+            .HasIndex(x => x.Key)
+            .IsUnique(true);
+    }
 
     public static void EnsureCreated()
     {
