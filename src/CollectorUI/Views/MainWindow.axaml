@@ -67,7 +67,7 @@
                 </TabControl.ItemTemplate>
                 <TabControl.ContentTemplate>
                     <DataTemplate DataType="models:ProjectModel">
-                        <Grid RowDefinitions="Auto,Auto,*">
+                        <Grid RowDefinitions="Auto,Auto,Auto,*">
                             <CheckBox Grid.Row="0"
                                       IsChecked="{Binding IsSelected}"
                                       Content="Include project on report"
@@ -81,7 +81,12 @@
                                     IsVisible="{Binding HasCoverageReport}"
                                     Margin="0,0,0,10" />
 
-                            <TreeDataGrid Grid.Row="2"
+                            <TextBox Grid.Row="2"
+                                     Margin="0,0,0,10"
+                                     Watermark="Filter namespaces..."
+                                     Text="{Binding FilterText, UpdateSourceTrigger=PropertyChanged}" />
+
+                            <TreeDataGrid Grid.Row="3"
                                           Source="{Binding Source}"
                                           HorizontalAlignment="Stretch"
                                           VerticalAlignment="Stretch" />

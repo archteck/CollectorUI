@@ -242,14 +242,139 @@ public class ProjectModel
 
     public ProjectModel() => NamespaceTree = [];
 
-    public void BuildNamespaceTree()
+    // Mantém a árvore completa (todas as raízes) para realizar filtragem/clonagem.
+    private List<NamespaceNodeViewModel> _allNamespaceRoots = new();
+
+    // Texto do filtro (atualiza a exibição ao mudar).
+    private string? _filterText;
+    public string? FilterText
     {
-        NamespaceTree.Clear();
-        foreach (var node in GetNamespaceTree())
+        get => _filterText;
+        set
         {
-            NamespaceTree.Add(node);
+            if (_filterText == value)
+            {
+                return;
+            }
+            _filterText = value;
+            ApplyFilter();
+        }
+    }
+
+    // Aplica o filtro reconstruindo a árvore visível a partir de _allNamespaceRoots,
+    // preservando os estados de seleção atuais.
+    private void ApplyFilter()
+    {
+        var selectionMap = CaptureSelectionStates();
+        RebuildVisibleTree(selectionMap);
+    }
+
+    // Captura o estado de seleção atual por nome de namespace.
+    private Dictionary<string, bool> CaptureSelectionStates()
+    {
+        var map = new Dictionary<string, bool>(StringComparer.Ordinal);
+        void Visit(NamespaceNodeViewModel n)
+        {
+            map[n.Name] = n.IsChecked;
+            foreach (var c in n.Children)
+            {
+                Visit(c);
+            }
+        }
+        foreach (var r in NamespaceTree)
+        {
+            Visit(r);
         }
 
+        return map;
+    }
+
+    // Reconstrói NamespaceTree a partir de _allNamespaceRoots, aplicando o filtro e estados de seleção.
+    private void RebuildVisibleTree(Dictionary<string, bool> selectionMap)
+    {
+        var term = string.IsNullOrWhiteSpace(_filterText) ? null : _filterText!.Trim();
+
+        NamespaceTree.Clear();
+
+        if (_allNamespaceRoots is null || _allNamespaceRoots.Count == 0)
+        {
+            return;
+        }
+
+        foreach (var root in _allNamespaceRoots)
+        {
+            var clone = CloneFiltered(root, term, selectionMap);
+            if (clone is not null)
+            {
+                // Expande todos quando há filtro para facilitar a visualização.
+                if (term is not null)
+                {
+                    ExpandRecursive(clone);
+                }
+                NamespaceTree.Add(clone);
+            }
+        }
+    }
+
+    // Clona o nó aplicando o filtro; retorna null se nem o nó nem os descendentes combinarem.
+    private static NamespaceNodeViewModel? CloneFiltered(
+        NamespaceNodeViewModel node,
+        string? term,
+        Dictionary<string, bool> selectionMap)
+    {
+        bool selfMatches = term is null || node.Name.Contains(term, StringComparison.OrdinalIgnoreCase);
+
+        var filteredChildren = new List<NamespaceNodeViewModel>();
+        foreach (var child in node.Children)
+        {
+            var childClone = CloneFiltered(child, term, selectionMap);
+            if (childClone is not null)
+            {
+                filteredChildren.Add(childClone);
+            }
+        }
+
+        if (!selfMatches && filteredChildren.Count == 0)
+        {
+            return null;
+        }
+
+        var clone = new NamespaceNodeViewModel(node.Name)
+        {
+            IsChecked = selectionMap.TryGetValue(node.Name, out var isChecked) ? isChecked : true
+        };
+
+        foreach (var fc in filteredChildren)
+        {
+            fc.Parent = clone;
+            clone.Children.Add(fc);
+        }
+
+        return clone;
+    }
+
+    private static void ExpandRecursive(NamespaceNodeViewModel node)
+    {
+        node.IsExpanded = true;
+        foreach (var child in node.Children)
+        {
+            ExpandRecursive(child);
+        }
+    }
+
+    public void BuildNamespaceTree()
+    {
+        // Preserva seleção atual antes de reconstruir tudo.
+        var prevSelection = CaptureSelectionStates();
+
+        // Reconstroi a árvore completa a partir do modelo.
+        _allNamespaceRoots = GetNamespaceTree();
+
+        // Atualiza a coleção visível conforme o filtro atual.
+        NamespaceTree.Clear();
+        RebuildVisibleTree(prevSelection);
+
+        // (Re)cria a fonte (Source) se necessário – a coleção observada é NamespaceTree.
         Source = new HierarchicalTreeDataGridSource<NamespaceNodeViewModel>(NamespaceTree)
         {
             Columns =
