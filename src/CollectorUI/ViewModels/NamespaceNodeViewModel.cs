@@ -27,7 +27,7 @@ public partial class NamespaceNodeViewModel : ObservableObject
     private bool _isChecked = true;
 
     [ObservableProperty]
-    private bool _isExpanded = true;
+    private bool _isExpanded = false;
 
     // Evita cascata para filhos quando o estado é ajustado a partir de um filho.
     private bool _suppressChildCascade;

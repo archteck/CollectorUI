@@ -267,7 +267,11 @@ public class ProjectModel
     private void ApplyFilter()
     {
         var selectionMap = CaptureSelectionStates();
-        RebuildVisibleTree(selectionMap);
+        var prevExpansion = CaptureExpansionStates();
+        RebuildVisibleTree(selectionMap,prevExpansion);
+
+        // Recria a source para garantir que o estado IsExpanded é respeitado após filtro.
+        RecreateSource();
     }
 
     // Captura o estado de seleção atual por nome de namespace.
@@ -290,8 +294,28 @@ public class ProjectModel
         return map;
     }
 
-    // Reconstrói NamespaceTree a partir de _allNamespaceRoots, aplicando o filtro e estados de seleção.
-    private void RebuildVisibleTree(Dictionary<string, bool> selectionMap)
+    // Captura o estado de expansão atual por nome de namespace.
+    private Dictionary<string, bool> CaptureExpansionStates()
+    {
+        var map = new Dictionary<string, bool>(StringComparer.Ordinal);
+        void Visit(NamespaceNodeViewModel n)
+        {
+            map[n.Name] = n.IsExpanded;
+            foreach (var c in n.Children)
+            {
+                Visit(c);
+            }
+        }
+        foreach (var r in NamespaceTree)
+        {
+            Visit(r);
+        }
+
+        return map;
+    }
+
+    // Reconstrói NamespaceTree a partir de _allNamespaceRoots, aplicando o filtro e estados de seleção/expansão.
+    private void RebuildVisibleTree(Dictionary<string, bool> selectionMap, Dictionary<string, bool> expansionMap)
     {
         var term = string.IsNullOrWhiteSpace(_filterText) ? null : _filterText!.Trim();
 
@@ -304,7 +328,7 @@ public class ProjectModel
 
         foreach (var root in _allNamespaceRoots)
         {
-            var clone = CloneFiltered(root, term, selectionMap);
+            var clone = CloneFiltered(root, term, selectionMap, expansionMap);
             if (clone is not null)
             {
                 // Expande todos quando há filtro para facilitar a visualização.
@@ -321,14 +345,15 @@ public class ProjectModel
     private static NamespaceNodeViewModel? CloneFiltered(
         NamespaceNodeViewModel node,
         string? term,
-        Dictionary<string, bool> selectionMap)
+        Dictionary<string, bool> selectionMap,
+        Dictionary<string, bool> expansionMap)
     {
         bool selfMatches = term is null || node.Name.Contains(term, StringComparison.OrdinalIgnoreCase);
 
         var filteredChildren = new List<NamespaceNodeViewModel>();
         foreach (var child in node.Children)
         {
-            var childClone = CloneFiltered(child, term, selectionMap);
+            var childClone = CloneFiltered(child, term, selectionMap, expansionMap);
             if (childClone is not null)
             {
                 filteredChildren.Add(childClone);
@@ -342,7 +367,8 @@ public class ProjectModel
 
         var clone = new NamespaceNodeViewModel(node.Name)
         {
-            IsChecked = selectionMap.TryGetValue(node.Name, out var isChecked) ? isChecked : true
+            IsChecked = selectionMap.TryGetValue(node.Name, out var isChecked) ? isChecked : true,
+            IsExpanded = expansionMap.TryGetValue(node.Name, out var isExp) ? isExp : node.IsExpanded
         };
 
         foreach (var fc in filteredChildren)
@@ -430,17 +456,23 @@ public class ProjectModel
 
     public void BuildNamespaceTree()
     {
-        // Preserva seleção atual antes de reconstruir tudo.
+        // Preserva seleção e expansão atuais antes de reconstruir tudo.
         var prevSelection = CaptureSelectionStates();
+        var prevExpansion = CaptureExpansionStates();
 
         // Reconstroi a árvore completa a partir do modelo.
         _allNamespaceRoots = GetNamespaceTree();
 
         // Atualiza a coleção visível conforme o filtro atual.
         NamespaceTree.Clear();
-        RebuildVisibleTree(prevSelection);
+        RebuildVisibleTree(prevSelection, prevExpansion);
 
-        // (Re)cria a fonte (Source) se necessário – a coleção observada é NamespaceTree.
+        // (Re)cria a fonte (Source) – ligar expansão ao IsExpanded.
+        RecreateSource();
+    }
+
+    // Helper para recriar a fonte com colunas e binding de expansão.
+    private void RecreateSource() =>
         Source = new HierarchicalTreeDataGridSource<NamespaceNodeViewModel>(NamespaceTree)
         {
             Columns =
@@ -449,10 +481,11 @@ public class ProjectModel
                     (x, value) => x.IsChecked = value),
                 new HierarchicalExpanderColumn<NamespaceNodeViewModel>(
                     new TextColumn<NamespaceNodeViewModel, string>
-                        ("Namespace", x => x.Name), x => x.Children)
+                        ("Namespace", x => x.Name),
+                    x => x.Children,
+                    isExpandedSelector: x => x.IsExpanded)
             },
         };
-    }
 
     /// <summary>
     /// Retorna a lista de namespaces selecionados (apenas maiores pais, sem filhos redundantes).
