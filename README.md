@@ -104,13 +104,6 @@ CollectorUI is a cross‑platform desktop application (Windows, macOS, and Linux
   - A minimum size (600x600) is enforced for UX.
   - If closing while maximized, the last “Normal” size is saved and restored.
 
-## Roadmap (Ideas)
-
-- Export/import of selection preferences per solution.
-- Support for additional ReportGenerator output formats.
-- Theme/color options and keyboard shortcuts.
-- CI/CD integration to pull reports automatically.
-
 ## Contributing
 
 Contributions are welcome!
