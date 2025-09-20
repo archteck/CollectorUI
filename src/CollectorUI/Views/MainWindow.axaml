@@ -3,7 +3,6 @@
         xmlns:vm="using:CollectorUI.ViewModels"
         xmlns:models="using:CollectorUI.Models"
         xmlns:controls="using:CollectorUI.Controls"
-        xmlns:avalonia="clr-namespace:Avalonia.Controls;assembly=Avalonia.Controls.DataGrid"
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         mc:Ignorable="d" d:DesignWidth="800" d:DesignHeight="450"
@@ -68,13 +67,7 @@
                 </TabControl.ItemTemplate>
                 <TabControl.ContentTemplate>
                     <DataTemplate DataType="models:ProjectModel">
-                        <Grid>
-                            <Grid.RowDefinitions>
-                                <RowDefinition Height="Auto" />
-                                <RowDefinition Height="Auto" />
-                                <RowDefinition Height="*" />
-                            </Grid.RowDefinitions>
-
+                        <Grid RowDefinitions="Auto,Auto,*">
                             <CheckBox Grid.Row="0"
                                       IsChecked="{Binding IsSelected}"
                                       Content="Include project on report"
