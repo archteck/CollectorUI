@@ -73,6 +73,12 @@ public partial class MainWindowViewModel : ViewModelBase
                 TestProjects = new ObservableCollection<ProjectModel>(CurrentSolution.TestProjects);
             });
 
+            // Aplica estados desmarcados guardados por solução
+            foreach (var project in TestProjects)
+            {
+                project.ApplyDeselectionStates(SolutionPath!);
+            }
+
             StatusMessage = $"Loaded solution with {TestProjects.Count} test projects";
         }
         catch (Exception ex)
@@ -118,6 +124,11 @@ public partial class MainWindowViewModel : ViewModelBase
 
             // Força o ItemsControl a atualizar para refletir HasCoverageReport/paths
             TestProjects = new ObservableCollection<ProjectModel>(TestProjects);
+
+            // Persiste os últimos checks (desmarcados) por solução/projeto
+            SelectionService.SaveDeselectedForSolution(SolutionPath!, TestProjects.Select(p =>
+                (p.FullPath ?? string.Empty, p.GetDeselectedNamespaces())));
+
             StatusMessage = result;
         }
         catch (Exception ex)

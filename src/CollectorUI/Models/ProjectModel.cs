@@ -3,6 +3,7 @@ using CollectorUI.ViewModels;
 using System.Collections.ObjectModel;
 using Avalonia.Controls;
 using Avalonia.Controls.Models.TreeDataGrid;
+using CollectorUI.Services;
 
 namespace CollectorUI.Models;
 
@@ -359,6 +360,71 @@ public class ProjectModel
         foreach (var child in node.Children)
         {
             ExpandRecursive(child);
+        }
+    }
+
+    /// <summary>
+    /// Aplica estados desmarcados guardados em BD para esta solução/projeto (default permanece true).
+    /// </summary>
+    /// <param name="solutionPath">Caminho completo da solução.</param>
+    public void ApplyDeselectionStates(string solutionPath)
+    {
+        if (string.IsNullOrWhiteSpace(solutionPath) || string.IsNullOrWhiteSpace(FullPath))
+        {
+            return;
+        }
+
+        var deselected = SelectionService.LoadDeselectedNamespaces(solutionPath, FullPath!);
+        if (deselected.Count == 0)
+        {
+            return;
+        }
+
+        void Visit(NamespaceNodeViewModel n)
+        {
+            if (deselected.Contains(n.Name))
+            {
+                n.IsChecked = false;
+            }
+            foreach (var c in n.Children)
+            {
+                Visit(c);
+            }
+        }
+
+        foreach (var root in NamespaceTree)
+        {
+            Visit(root);
+        }
+    }
+
+    /// <summary>
+    /// Enumera todos os namespaces atualmente desmarcados.
+    /// </summary>
+    public IEnumerable<string> GetDeselectedNamespaces()
+    {
+        IEnumerable<string> Visit(NamespaceNodeViewModel n)
+        {
+            if (!n.IsChecked)
+            {
+                yield return n.Name;
+            }
+
+            foreach (var c in n.Children)
+            {
+                foreach (var x in Visit(c))
+                {
+                    yield return x;
+                }
+            }
+        }
+
+        foreach (var root in NamespaceTree)
+        {
+            foreach (var x in Visit(root))
+            {
+                yield return x;
+            }
         }
     }
 
