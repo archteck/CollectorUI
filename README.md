@@ -1,65 +1,115 @@
 # CollectorUI
 
-CollectorUI is a cross‑platform desktop application built with .NET 9 and C# 13. Its goal is to generate and visualize code coverage reports from one or more coverage files. It leverages ReportGenerator (by Daniel Palme) to convert raw coverage data into human‑readable reports.
+CollectorUI is a cross‑platform desktop application (Windows, macOS, and Linux) built with .NET 9 and C# 13. It simplifies generating and viewing code coverage reports by converting raw coverage outputs into readable HTML via ReportGenerator.
 
 Repository: https://github.com/archteck/CollectorUI
 
-## Overview
+## Features
 
-- Generate coverage reports from Cobertura.
-- Produce clean, human‑readable outputs in HTML.
-- Provide a UI‑first workflow to select coverage inputs and view results locally.
-
-ReportGenerator supports a wide range of coverage formats (including Cobertura) and output types; see its docs for details [[1]](https://reportgenerator.io/) [[3]](https://github.com/danielpalme/ReportGenerator).
-
-This project aims to merge steps in on easy simple click on UI ambient.
+- Coverage report generation (e.g., Cobertura) to HTML using ReportGenerator.
+- Simple UI to select a solution and test projects.
+- Hierarchical TreeDataGrid with:
+  - Namespace selection via checkboxes.
+  - Instant text filtering (matches nodes or any of their descendants).
+  - Expansion state preservation when filtering and updating.
+- Local persistence (SQLite + EF Core):
+  - Saves per solution/project the deselected namespaces (default is selected).
+  - Saves window size on close and restores it on next launch.
+- Open the generated HTML report directly from the app.
 
 ## Tech Stack
 
 - .NET 9.0
 - C# 13.0
-- Avalonia UI
+- Avalonia UI (cross‑platform desktop)
+- SQLite + EF Core (lightweight local persistence)
+- ReportGenerator (coverage to HTML conversion)
 
-## Getting Started
+## Requirements
 
-1. Prerequisites
-   - .NET 9.0 SDK
-   - An IDE (e.g., JetBrains Rider, Visual Studio, VS Code)
+- .NET 9 SDK
+- Your preferred IDE (Rider, Visual Studio, VS Code)
+- Optional: ReportGenerator installed as a .NET global tool (the app will attempt to install it if needed)
+  ```bash
+  dotnet tool install --global dotnet-reportgenerator-globaltool
+  ```
 
-2. Clone
+## Quick Start
+
+1. Clone the repository
    ```bash
    git clone https://github.com/archteck/CollectorUI.git
    cd CollectorUI
    ```
 
-3. Restore
+2. Restore dependencies
    ```bash
    dotnet restore
    ```
 
-4. Build and Run
+3. Build and run
    ```bash
    dotnet build
    dotnet run
    ```
-   (You can also launch from your IDE.)
+   (You can also launch directly from your IDE.)
 
-## Using ReportGenerator
+## How to Use
 
-CollectorUI relies on ReportGenerator to transform coverage data into readable reports. ReportGenerator is distributed as a .NET global tool on NuGet and if not installed this project will install it for you.
+1. Select a solution (.slnx)
+   - Click “Select Solution” and point to a `.slnx` file.
+   - The app detects and lists test projects.
 
-- Install (global):
-  ```bash
-  dotnet tool install --global dotnet-reportgenerator-globaltool
-  ```
-  See the NuGet package for more details [[2]](https://www.nuget.org/packages/dotnet-reportgenerator-globaltool) and usage examples in the official docs [[1]](https://reportgenerator.io/usage).
+2. Choose projects
+   - Use “Select All” / “Unselect All” as needed.
+   - Each tab represents one test project.
 
+3. Explore namespaces
+   - The TreeDataGrid shows the namespace hierarchy for the project (or dependencies when applicable).
+   - Check/uncheck nodes to include/exclude areas in the report.
+   - Use the text filter to search by namespace name. Nodes that match (or have matching descendants) remain visible.
+   - Expansion state is preserved; with an active filter, relevant nodes are expanded to reveal matches.
 
-## Typical Workflow
+4. Generate a report
+   - Click “Generate Report”.
+   - When completed, the “Open Report” button becomes available per project; click to open the HTML report in your browser.
 
-1. Produce coverage in your preferred format (e.g., by running tests with coverage enabled).
-2. Use ReportGenerator to convert the raw coverage output into one or more readable formats.
-3. Open and inspect the generated report output within the app or your browser.
+5. Automatic persistence
+   - When a report is generated, the project’s deselected namespaces are saved per solution/project.
+   - Reopening the same solution restores those deselections (default is selected if no record exists).
+   - On app close, the window size is saved and restored on next launch.
+
+## Data Location
+
+- A SQLite database is created under the user’s local application data folder, in a directory named “CollectorUI”:
+  - Database file: `collectorui.sqlite`
+- The schema includes:
+  - A table for namespace selections per solution/project (stores deselections).
+  - An app settings table (e.g., `Window.Width`, `Window.Height`).
+
+## Troubleshooting
+
+- ReportGenerator
+  - If generation fails due to a missing tool, install it manually:
+    ```bash
+    dotnet tool install --global dotnet-reportgenerator-globaltool
+    ```
+  - Docs and usage: https://reportgenerator.io/
+
+- Filter shows no results
+  - Check the search text (case‑insensitive).
+  - Clear the filter to return to the full view.
+
+- Unexpected window size
+  - A minimum size (600x600) is enforced for UX.
+  - If closing while maximized, the last “Normal” size is saved and restored.
+
+## Roadmap (Ideas)
+
+- Export/import of selection preferences per solution.
+- Support for additional ReportGenerator output formats.
+- Theme/color options and keyboard shortcuts.
+- CI/CD integration to pull reports automatically.
 
 ## Contributing
 
@@ -67,13 +117,13 @@ Contributions are welcome!
 
 1. Fork the repository.
 2. Create a feature branch.
-3. Make changes with tests where applicable.
-4. Submit a detailed Pull Request.
+3. Implement changes with tests where applicable.
+4. Submit a Pull Request with a clear description of the goal and approach.
 
 ## License
 
-- CollectorUI is licensed under the MIT License. See the [LICENSE](LICENSE) file for details.
-- ReportGenerator is a separate, third‑party tool by Daniel Palme.
+- CollectorUI is licensed under the MIT License. See the [LICENSE](LICENSE) file.
+- ReportGenerator is a third‑party project by Daniel Palme (separate license).
 
 ## Legal and Attribution
 
@@ -83,5 +133,5 @@ Contributions are welcome!
 
 ## Acknowledgements
 
-- ReportGenerator by Daniel Palme [[3]](https://github.com/danielpalme/ReportGenerator).
-- The broader .NET and open‑source community.
+- ReportGenerator by Daniel Palme: https://github.com/danielpalme/ReportGenerator
+- The .NET and open‑source community.
