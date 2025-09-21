@@ -58,15 +58,37 @@ public static class SelectionService
         tx.Commit();
     }
 
-    // Obtém lista de soluções recentes, ordenadas pela última gravação
+    // Regista/atualiza a solução para a qual se gerou report
+    public static void UpsertSolutionReport(string solutionPath)
+    {
+        using var ctx = new AppDbContext();
+        var existing = ctx.SolutionReports.FirstOrDefault(r => r.SolutionPath == solutionPath);
+        var now = DateTime.UtcNow;
+
+        if (existing is null)
+        {
+            ctx.SolutionReports.Add(new SolutionReport
+            {
+                SolutionPath = solutionPath,
+                LastGeneratedAt = now
+            });
+        }
+        else
+        {
+            existing.LastGeneratedAt = now;
+            ctx.SolutionReports.Update(existing);
+        }
+
+        ctx.SaveChanges();
+    }
+
+    // Obtém lista de soluções recentes baseadas nos reports gerados
     public static IReadOnlyList<string> GetRecentSolutions(int limit = 10)
     {
         using var ctx = new AppDbContext();
-        var recent = ctx.NamespaceSelections
+        var recent = ctx.SolutionReports
             .AsNoTracking()
-            .GroupBy(s => s.SolutionPath)
-            .Select(g => new { SolutionPath = g.Key, LastSaved = g.Max(x => x.SavedAt) })
-            .OrderByDescending(x => x.LastSaved)
+            .OrderByDescending(x => x.LastGeneratedAt)
             .Take(limit)
             .Select(x => x.SolutionPath)
             .ToList();
@@ -78,8 +100,13 @@ public static class SelectionService
     public static void RemoveSolutionRecords(string solutionPath)
     {
         using var ctx = new AppDbContext();
-        var items = ctx.NamespaceSelections.Where(s => s.SolutionPath == solutionPath);
-        ctx.NamespaceSelections.RemoveRange(items);
+
+        var nsItems = ctx.NamespaceSelections.Where(s => s.SolutionPath == solutionPath);
+        ctx.NamespaceSelections.RemoveRange(nsItems);
+
+        var repItems = ctx.SolutionReports.Where(s => s.SolutionPath == solutionPath);
+        ctx.SolutionReports.RemoveRange(repItems);
+
         ctx.SaveChanges();
     }
 }

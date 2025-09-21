@@ -129,6 +129,12 @@ public partial class MainWindowViewModel : ViewModelBase
             SelectionService.SaveDeselectedForSolution(SolutionPath!, TestProjects.Select(p =>
                 (p.FullPath ?? string.Empty, p.GetDeselectedNamespaces())));
 
+            // Atualiza a lista de recentes baseada em reports gerados
+            if (!string.IsNullOrWhiteSpace(SolutionPath) && TestProjects.Any(p => p.HasCoverageReport))
+            {
+                SelectionService.UpsertSolutionReport(SolutionPath!);
+            }
+
             StatusMessage = result;
         }
         catch (Exception ex)
