@@ -20,7 +20,7 @@ public static partial class ReportGeneratorService
             solutionPath, testProjects.Count);
 
         //Validate path
-        if (!Path.Exists(solutionPath) || Path.GetExtension(solutionPath) != ".slnx")
+        if (!Path.Exists(solutionPath) || !(Path.GetExtension(solutionPath) == ".slnx" || Path.GetExtension(solutionPath) == ".sln"))
         {
             Log.Warning("Invalid Solution Path provided: {SolutionPath}", solutionPath);
             return "Invalid Solution Path";
