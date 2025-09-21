@@ -44,7 +44,7 @@ public class AppDbContext : DbContext
     public static void EnsureCreated()
     {
         using var ctx = new AppDbContext();
-        // Ensure base database exists (no migrations)
-        ctx.Database.EnsureCreated();
+        // Apply pending migrations (creates DB if it doesn't exist)
+        ctx.Database.Migrate();
     }
 }
