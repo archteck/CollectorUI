@@ -57,4 +57,29 @@ public static class SelectionService
 
         tx.Commit();
     }
+
+    // Obtém lista de soluções recentes, ordenadas pela última gravação
+    public static IReadOnlyList<string> GetRecentSolutions(int limit = 10)
+    {
+        using var ctx = new AppDbContext();
+        var recent = ctx.NamespaceSelections
+            .AsNoTracking()
+            .GroupBy(s => s.SolutionPath)
+            .Select(g => new { SolutionPath = g.Key, LastSaved = g.Max(x => x.SavedAt) })
+            .OrderByDescending(x => x.LastSaved)
+            .Take(limit)
+            .Select(x => x.SolutionPath)
+            .ToList();
+
+        return recent;
+    }
+
+    // Remove todos os registos associados a uma solução
+    public static void RemoveSolutionRecords(string solutionPath)
+    {
+        using var ctx = new AppDbContext();
+        var items = ctx.NamespaceSelections.Where(s => s.SolutionPath == solutionPath);
+        ctx.NamespaceSelections.RemoveRange(items);
+        ctx.SaveChanges();
+    }
 }

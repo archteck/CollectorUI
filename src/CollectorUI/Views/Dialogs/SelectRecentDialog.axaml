@@ -1,0 +1,20 @@
+﻿<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        x:Class="CollectorUI.Views.Dialogs.SelectRecentDialog"
+        Width="640" Height="360"
+        CanResize="True"
+        WindowStartupLocation="CenterOwner"
+        SystemDecorations="BorderOnly"
+        Title="Recent Solutions">
+  <Grid RowDefinitions="Auto,*,Auto" Margin="12">
+    <TextBlock Grid.Row="0" Text="Select a recent solution to open:" Margin="0,0,0,8"/>
+    <ListBox Grid.Row="1"
+             x:Name="RecentList"
+             SelectionMode="Single"
+             DoubleTapped="OnListDoubleTapped"/>
+    <StackPanel Grid.Row="2" Orientation="Horizontal" HorizontalAlignment="Right" Margin="0,8,0,0">
+      <Button MinWidth="100" Margin="0,0,8,0" Click="OnCancel">Cancel</Button>
+      <Button MinWidth="100" Click="OnOpen">Open</Button>
+    </StackPanel>
+  </Grid>
+</Window>
