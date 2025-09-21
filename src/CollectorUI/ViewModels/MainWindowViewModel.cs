@@ -24,7 +24,7 @@ public partial class MainWindowViewModel : ViewModelBase
     [ObservableProperty]
     private bool _canGenerateCoverage;
 
-    public MainWindowViewModel() => SolutionPath = "Please select a solution file (.slnx)";
+    public MainWindowViewModel() => SolutionPath = "Please select a solution file (.sln/.slnx)";
 
     [RelayCommand]
     public async Task SelectSolutionAsync()
@@ -42,7 +42,7 @@ public partial class MainWindowViewModel : ViewModelBase
             FileTypeFilter = [
                 new FilePickerFileType("Solution Files")
                 {
-                    Patterns = ["*.slnx"]
+                    Patterns = ["*.sln","*.slnx"]
                 }
             ]
         });
@@ -145,7 +145,7 @@ public partial class MainWindowViewModel : ViewModelBase
 
     partial void OnSolutionPathChanged(string? value) => UpdateCanGenerateCoverage();
 
-    private void UpdateCanGenerateCoverage() => CanGenerateCoverage = TestProjects.Count > 0 && !string.IsNullOrWhiteSpace(SolutionPath) && SolutionPath.EndsWith(".slnx", StringComparison.OrdinalIgnoreCase);
+    private void UpdateCanGenerateCoverage() => CanGenerateCoverage = TestProjects.Count > 0 && !string.IsNullOrWhiteSpace(SolutionPath) && (SolutionPath.EndsWith(".sln", StringComparison.OrdinalIgnoreCase) || SolutionPath.EndsWith(".slnx", StringComparison.OrdinalIgnoreCase));
 
     /// <summary>
     /// Propriedade auxiliar para expor a árvore de namespaces do projeto selecionado.

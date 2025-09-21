@@ -5,7 +5,7 @@ namespace CollectorUI.Models;
 public class SolutionModel
 {
     public string? SolutionPath { get; set; }
-    public List<ProjectModel> Projects { get; set; } = new List<ProjectModel>();
+    public List<ProjectModel> Projects { get; set; } = [];
     public List<ProjectModel> TestProjects => Projects.Where(p => p.IsTestProject).ToList();
 
     public static SolutionModel ParseFromFile(string filePath)
@@ -16,23 +16,19 @@ public class SolutionModel
         };
 
         var solutionDir = Path.GetDirectoryName(filePath);
-        var doc = XDocument.Load(filePath);
+        var ext = Path.GetExtension(filePath)?.ToLowerInvariant();
 
-        foreach (var projectElement in doc.Descendants("Project"))
+        var projectPaths =
+            ext == ".slnx" ? GetProjectPathsFromSlnx(filePath,solutionDir) :
+            ext == ".sln" ? GetProjectPathsFromSln(filePath,solutionDir) :
+            [];
+
+        foreach (var projectPath in projectPaths)
         {
-            var projectPathAttr = projectElement.Attribute("Path");
-            if (projectPathAttr != null)
+            if (File.Exists(projectPath))
             {
-                if (solutionDir != null)
-                {
-                    var baseDir = Path.GetFullPath(solutionDir);
-                    var projectPath = Path.GetFullPath(projectPathAttr.Value, baseDir);
-                    if (File.Exists(projectPath))
-                    {
-                        var project = ProjectModel.FromProjectFile(projectPath);
-                        solution.Projects.Add(project);
-                    }
-                }
+                var project = ProjectModel.FromProjectFile(projectPath);
+                solution.Projects.Add(project);
             }
         }
 
@@ -49,5 +45,48 @@ public class SolutionModel
         }
 
         return solution;
+    }
+
+    private static IEnumerable<string> GetProjectPathsFromSlnx(string filePath, string? solutionDir)
+    {
+        if (solutionDir is null)
+        {
+            yield break;
+        }
+
+        var baseDir = Path.GetFullPath(solutionDir);
+        var doc = XDocument.Load(filePath);
+
+        foreach (var projectElement in doc.Descendants("Project"))
+        {
+            var projectPathAttr = projectElement.Attribute("Path");
+            if (projectPathAttr != null)
+            {
+                var projectPath = Path.GetFullPath(projectPathAttr.Value, baseDir);
+                yield return projectPath;
+            }
+        }
+    }
+
+   private static IEnumerable<string> GetProjectPathsFromSln(string filePath, string? solutionDir)
+    {
+        if (solutionDir is null)
+        {
+            yield break;
+        }
+
+        var baseDir = Path.GetFullPath(solutionDir);
+        const string pattern = @"^\s*Project\(.*\)\s=\s""[^""]+"",\s*""([^""]+\.(?:csproj|vbproj|fsproj))"",\s*""\{[^""]+}""";
+
+        foreach (var line in File.ReadLines(filePath))
+        {
+            var match = System.Text.RegularExpressions.Regex.Match(line, pattern, System.Text.RegularExpressions.RegexOptions.IgnoreCase);
+            if (match.Success)
+            {
+                var relativePath = match.Groups[1].Value.Replace('\\', Path.DirectorySeparatorChar);
+                var fullPath = Path.GetFullPath(relativePath, baseDir);
+                yield return fullPath;
+            }
+        }
     }
 }
