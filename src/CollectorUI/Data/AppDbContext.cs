@@ -6,6 +6,7 @@ public class AppDbContext : DbContext
 {
     public DbSet<NamespaceSelection> NamespaceSelections => Set<NamespaceSelection>();
     public DbSet<AppSetting> AppSettings => Set<AppSetting>();
+    public DbSet<SolutionReport> SolutionReports => Set<SolutionReport>();
 
     private static string GetDatabasePath()
     {
@@ -34,11 +35,16 @@ public class AppDbContext : DbContext
         modelBuilder.Entity<AppSetting>()
             .HasIndex(x => x.Key)
             .IsUnique(true);
+
+        modelBuilder.Entity<SolutionReport>()
+            .HasIndex(x => x.SolutionPath)
+            .IsUnique(true);
     }
 
     public static void EnsureCreated()
     {
         using var ctx = new AppDbContext();
+        // Ensure base database exists (no migrations)
         ctx.Database.EnsureCreated();
     }
 }
