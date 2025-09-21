@@ -67,11 +67,11 @@ public partial class MainWindowViewModel : ViewModelBase
             StatusMessage = "Loading solution...";
             SolutionPath = path;
 
-            await Task.Run(() =>
-            {
-                CurrentSolution = SolutionModel.ParseFromFile(path);
-                TestProjects = new ObservableCollection<ProjectModel>(CurrentSolution.TestProjects);
-            });
+            var parsed = await Task.Run(() => SolutionModel.ParseFromFile(path));
+
+            // Atribuições em thread da UI
+            CurrentSolution = parsed;
+            TestProjects = new ObservableCollection<ProjectModel>(parsed.TestProjects);
 
             // Aplica estados desmarcados guardados por solução
             foreach (var project in TestProjects)
