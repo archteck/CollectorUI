@@ -1,0 +1,20 @@
+﻿<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        x:Class="CollectorUI.Views.Dialogs.ConfirmDialog"
+        Width="460" Height="200"
+        CanResize="False"
+        WindowStartupLocation="CenterOwner"
+        SystemDecorations="BorderOnly"
+        Title="Confirm">
+  <Grid RowDefinitions="*,Auto" Margin="16">
+    <ScrollViewer Grid.Row="0" VerticalScrollBarVisibility="Auto">
+      <TextBlock x:Name="MessageText"
+                 TextWrapping="Wrap"
+                 Margin="0,0,0,10"/>
+    </ScrollViewer>
+    <StackPanel Grid.Row="1" Orientation="Horizontal" HorizontalAlignment="Right">
+      <Button x:Name="NoButton" MinWidth="80" Margin="0,0,8,0" Click="OnNo">No</Button>
+      <Button x:Name="YesButton" MinWidth="80" Click="OnYes">Yes</Button>
+    </StackPanel>
+  </Grid>
+</Window>

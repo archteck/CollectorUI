@@ -67,11 +67,11 @@ public partial class MainWindowViewModel : ViewModelBase
             StatusMessage = "Loading solution...";
             SolutionPath = path;
 
-            await Task.Run(() =>
-            {
-                CurrentSolution = SolutionModel.ParseFromFile(path);
-                TestProjects = new ObservableCollection<ProjectModel>(CurrentSolution.TestProjects);
-            });
+            var parsed = await Task.Run(() => SolutionModel.ParseFromFile(path));
+
+            // Atribuições em thread da UI
+            CurrentSolution = parsed;
+            TestProjects = new ObservableCollection<ProjectModel>(parsed.TestProjects);
 
             // Aplica estados desmarcados guardados por solução
             foreach (var project in TestProjects)
@@ -181,6 +181,65 @@ public partial class MainWindowViewModel : ViewModelBase
         else
         {
             StatusMessage = "Report not found for this project.";
+        }
+    }
+
+    [RelayCommand]
+    public async Task LoadRecentSolutionsAsync()
+    {
+        try
+        {
+            IsBusy = true;
+            StatusMessage = "Loading recent solutions...";
+
+            var window = (Application.Current?.ApplicationLifetime as IClassicDesktopStyleApplicationLifetime)?.MainWindow;
+            if (window is null)
+            {
+                StatusMessage = "No main window available.";
+                return;
+            }
+
+            // Abre o diálogo para o utilizador escolher uma solução recente
+            var picker = new CollectorUI.Views.Dialogs.SelectRecentDialog();
+            var selected = await picker.ShowDialog<string?>(window);
+
+            if (string.IsNullOrWhiteSpace(selected))
+            {
+                StatusMessage = "No recent solution selected.";
+                return;
+            }
+
+            if (File.Exists(selected))
+            {
+                await LoadSolutionAsync(selected);
+                return;
+            }
+
+            // Se não existir, perguntar se pretende remover da lista/BD
+            var confirm = new CollectorUI.Views.Dialogs.ConfirmDialog(
+                "File not found",
+                $"The solution file was not found:\n{selected}\n\nRemove it from recent and database?",
+                "Yes",
+                "No");
+            var remove = await confirm.ShowDialog<bool>(window);
+
+            if (remove)
+            {
+                SelectionService.RemoveSolutionRecords(selected);
+                StatusMessage = "Removed missing solution from database.";
+            }
+            else
+            {
+                StatusMessage = "Solution file not found.";
+            }
+        }
+        catch (Exception ex)
+        {
+            StatusMessage = $"Error loading recent solutions: {ex.Message}";
+        }
+        finally
+        {
+            IsBusy = false;
         }
     }
 }
