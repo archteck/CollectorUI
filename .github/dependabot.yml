@@ -25,3 +25,7 @@ updates:
       all-nuget:
         patterns:
           - "*"
+    ignore:
+        - dependency-name: "Avalonia.Controls.TreeDataGrid"
+          versions:
+              - ">= 11.2.0"
