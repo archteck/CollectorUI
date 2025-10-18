@@ -24,6 +24,23 @@ public partial class MainWindowViewModel : ViewModelBase
     [ObservableProperty]
     private bool _canGenerateCoverage;
 
+    // App update related
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(CanDownloadAppUpdate))]
+    private string _latestVersion = "";
+
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(CanDownloadAppUpdate))]
+    private bool _isUpdateAvailable;
+
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(CanDownloadAppUpdate))]
+    private bool _isCheckingUpdate;
+
+    [ObservableProperty]
+    private double _downloadProgress; // 0..1
+
+    public bool CanDownloadAppUpdate => IsUpdateAvailable && !IsCheckingUpdate;
     public MainWindowViewModel() => SolutionPath = "Please select a solution file (.sln/.slnx)";
 
     [RelayCommand]
@@ -246,6 +263,83 @@ public partial class MainWindowViewModel : ViewModelBase
         finally
         {
             IsBusy = false;
+        }
+    }
+      [RelayCommand]
+    private async Task CheckForAppUpdate()
+    {
+        try
+        {
+            IsCheckingUpdate = true;
+            StatusMessage = "Checking for app updates...";
+            var latest = await UpdateService.GetLatestReleaseAsync();
+            if (latest is null)
+            {
+                StatusMessage = "No suitable release asset found for your platform.";
+                IsUpdateAvailable = false;
+                LatestVersion = string.Empty;
+                return;
+            }
+            LatestVersion = latest.TagName;
+            IsUpdateAvailable = UpdateService.IsUpdateAvailable(latest.Version);
+            StatusMessage = IsUpdateAvailable
+                ? $"Update available: {latest.TagName} (asset: {latest.AssetName})."
+                : "You're on the latest version.";
+        }
+        catch (Exception ex)
+        {
+            StatusMessage = $"Update check failed: {ex.Message}";
+            IsUpdateAvailable = false;
+        }
+        finally
+        {
+            IsCheckingUpdate = false;
+        }
+    }
+
+    [RelayCommand]
+    private async Task DownloadAndRunUpdate()
+    {
+        try
+        {
+            StatusMessage = "Preparing download...";
+            var latest = await UpdateService.GetLatestReleaseAsync();
+            if (latest is null)
+            {
+                StatusMessage = "No suitable release asset found.";
+                return;
+            }
+            if (!UpdateService.IsUpdateAvailable(latest.Version))
+            {
+                StatusMessage = "Already up to date.";
+                return;
+            }
+
+            var progress = new Progress<double>(p => { DownloadProgress = p; });
+            var zipPath = await UpdateService.DownloadAssetAsync(latest.AssetDownloadUrl, progress);
+            StatusMessage = "Download complete. Extracting...";
+            var extractedDir = UpdateService.ExtractToNewFolder(zipPath, latest.TagName);
+            var exe = UpdateService.FindAppExecutable(extractedDir);
+            if (exe is null)
+            {
+                StatusMessage = $"Update extracted to {extractedDir}, but executable was not found.";
+                return;
+            }
+            var launched = UpdateService.TryLaunchAndExit(exe);
+            if (launched)
+            {
+                StatusMessage = "Launching updated version... The current application can be closed.";
+                // Optionally request close of current app
+                (Application.Current?.ApplicationLifetime as IClassicDesktopStyleApplicationLifetime)?.Shutdown();
+            }
+            else
+            {
+                StatusMessage = $"Update extracted to {extractedDir}. Please run the new application from that folder.";
+            }
+        }
+        catch (Exception ex)
+        {
+            StatusMessage = $"Update failed: {ex.Message}";
         }
     }
 }
