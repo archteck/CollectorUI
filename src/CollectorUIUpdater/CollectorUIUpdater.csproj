@@ -7,13 +7,6 @@
       <Nullable>enable</Nullable>
       <RootNamespace>CollectorUIUpdater</RootNamespace>
       <PublishSingleFile>true</PublishSingleFile>
-      <PublishAot>true</PublishAot>
-      <InvariantGlobalization>true</InvariantGlobalization>
-      <StripSymbols>true</StripSymbols>
-      <IlcOptimizationPreference>Size</IlcOptimizationPreference>
-      <DebuggerSupport>false</DebuggerSupport>
-      <EventSourceSupport>false</EventSourceSupport>
-      <PackageId>CollectorUIUpdater</PackageId>
     </PropertyGroup>
 
 </Project>
