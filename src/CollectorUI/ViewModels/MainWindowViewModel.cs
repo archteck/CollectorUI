@@ -21,24 +21,19 @@ public partial class MainWindowViewModel : ViewModelBase
 
     [ObservableProperty] private string? _statusMessage;
 
-    [ObservableProperty]
-    private bool _canGenerateCoverage;
+    [ObservableProperty] private bool _canGenerateCoverage;
 
     // App update related
-    [ObservableProperty]
-    [NotifyPropertyChangedFor(nameof(CanDownloadAppUpdate))]
+    [ObservableProperty] [NotifyPropertyChangedFor(nameof(CanDownloadAppUpdate))]
     private string _latestVersion = "";
 
-    [ObservableProperty]
-    [NotifyPropertyChangedFor(nameof(CanDownloadAppUpdate))]
+    [ObservableProperty] [NotifyPropertyChangedFor(nameof(CanDownloadAppUpdate))]
     private bool _isUpdateAvailable;
 
-    [ObservableProperty]
-    [NotifyPropertyChangedFor(nameof(CanDownloadAppUpdate))]
+    [ObservableProperty] [NotifyPropertyChangedFor(nameof(CanDownloadAppUpdate))]
     private bool _isCheckingUpdate;
 
-    [ObservableProperty]
-    private double _downloadProgress; // 0..1
+    [ObservableProperty] private double _downloadProgress; // 0..1
 
     public bool CanDownloadAppUpdate => IsUpdateAvailable && !IsCheckingUpdate;
     public MainWindowViewModel() => SolutionPath = "Please select a solution file (.sln/.slnx)";
@@ -56,11 +51,9 @@ public partial class MainWindowViewModel : ViewModelBase
         {
             AllowMultiple = false,
             Title = "Select Solution File",
-            FileTypeFilter = [
-                new FilePickerFileType("Solution Files")
-                {
-                    Patterns = ["*.sln","*.slnx"]
-                }
+            FileTypeFilter =
+            [
+                new FilePickerFileType("Solution Files") { Patterns = ["*.sln", "*.slnx"] }
             ]
         });
         if (result.Count > 0)
@@ -115,6 +108,7 @@ public partial class MainWindowViewModel : ViewModelBase
         {
             project.IsSelected = true;
         }
+
         // Força o ItemsControl a atualizar
         TestProjects = new ObservableCollection<ProjectModel>(TestProjects);
     }
@@ -126,6 +120,7 @@ public partial class MainWindowViewModel : ViewModelBase
         {
             project.IsSelected = false;
         }
+
         // Força o ItemsControl a atualizar
         TestProjects = new ObservableCollection<ProjectModel>(TestProjects);
     }
@@ -168,7 +163,12 @@ public partial class MainWindowViewModel : ViewModelBase
 
     partial void OnSolutionPathChanged(string? value) => UpdateCanGenerateCoverage();
 
-    private void UpdateCanGenerateCoverage() => CanGenerateCoverage = TestProjects.Count > 0 && !string.IsNullOrWhiteSpace(SolutionPath) && (SolutionPath.EndsWith(".sln", StringComparison.OrdinalIgnoreCase) || SolutionPath.EndsWith(".slnx", StringComparison.OrdinalIgnoreCase));
+    private void UpdateCanGenerateCoverage() => CanGenerateCoverage = TestProjects.Count > 0 &&
+                                                                      !string.IsNullOrWhiteSpace(SolutionPath) &&
+                                                                      (SolutionPath.EndsWith(".sln",
+                                                                           StringComparison.OrdinalIgnoreCase) ||
+                                                                       SolutionPath.EndsWith(".slnx",
+                                                                           StringComparison.OrdinalIgnoreCase));
 
     /// <summary>
     /// Propriedade auxiliar para expor a árvore de namespaces do projeto selecionado.
@@ -178,7 +178,9 @@ public partial class MainWindowViewModel : ViewModelBase
         get
         {
             var selected = TestProjects.FirstOrDefault(p => p.IsSelected);
-            return selected is not null ? new ObservableCollection<NamespaceNodeViewModel>(selected.GetNamespaceTree()) : null;
+            return selected is not null
+                ? new ObservableCollection<NamespaceNodeViewModel>(selected.GetNamespaceTree())
+                : null;
         }
     }
 
@@ -191,8 +193,7 @@ public partial class MainWindowViewModel : ViewModelBase
             {
                 System.Diagnostics.Process.Start(new System.Diagnostics.ProcessStartInfo
                 {
-                    FileName = project.CoverageReportIndexPath,
-                    UseShellExecute = true
+                    FileName = project.CoverageReportIndexPath, UseShellExecute = true
                 });
                 StatusMessage = $"Opened report for {project.Name}";
             }
@@ -215,7 +216,8 @@ public partial class MainWindowViewModel : ViewModelBase
             IsBusy = true;
             StatusMessage = "Loading recent solutions...";
 
-            var window = (Application.Current?.ApplicationLifetime as IClassicDesktopStyleApplicationLifetime)?.MainWindow;
+            var window = (Application.Current?.ApplicationLifetime as IClassicDesktopStyleApplicationLifetime)
+                ?.MainWindow;
             if (window is null)
             {
                 StatusMessage = "No main window available.";
@@ -265,7 +267,8 @@ public partial class MainWindowViewModel : ViewModelBase
             IsBusy = false;
         }
     }
-      [RelayCommand]
+
+    [RelayCommand]
     private async Task CheckForAppUpdate()
     {
         try
@@ -280,6 +283,7 @@ public partial class MainWindowViewModel : ViewModelBase
                 LatestVersion = string.Empty;
                 return;
             }
+
             LatestVersion = latest.TagName;
             IsUpdateAvailable = UpdateService.IsUpdateAvailable(latest.Version);
             StatusMessage = IsUpdateAvailable
@@ -319,22 +323,15 @@ public partial class MainWindowViewModel : ViewModelBase
             var zipPath = await UpdateService.DownloadAssetAsync(latest.AssetDownloadUrl, progress);
             StatusMessage = "Download complete. Extracting...";
             var extractedDir = UpdateService.ExtractToNewFolder(zipPath, latest.TagName);
-            var exe = UpdateService.FindAppExecutable(extractedDir);
-            if (exe is null)
-            {
-                StatusMessage = $"Update extracted to {extractedDir}, but executable was not found.";
-                return;
-            }
-            var launched = UpdateService.TryLaunchAndExit(exe);
+            // Hand off to external updater which will copy files into current app folder and relaunch
+            var launched = UpdateService.StartUpdaterAndExit(extractedDir);
             if (launched)
             {
-                StatusMessage = "Launching updated version... The current application can be closed.";
-                // Optionally request close of current app
-                (Application.Current?.ApplicationLifetime as IClassicDesktopStyleApplicationLifetime)?.Shutdown();
+                StatusMessage = "Updater launched. The application will close and restart after updating.";
             }
             else
             {
-                StatusMessage = $"Update extracted to {extractedDir}. Please run the new application from that folder.";
+                StatusMessage = $"Update extracted to {extractedDir}, but failed to start updater. Please update manually.";
             }
         }
         catch (Exception ex)
