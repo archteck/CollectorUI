@@ -78,6 +78,9 @@ public class ProjectModel
                     var includePath = projectRef.Attribute("Include")?.Value;
                     if (!string.IsNullOrEmpty(includePath))
                     {
+                        includePath = includePath
+                            .Replace('\\', Path.DirectorySeparatorChar)
+                            .Replace('/', Path.DirectorySeparatorChar);
                         var fullPath = Path.GetFullPath(Path.Combine(Path.GetDirectoryName(projectPath) ?? string.Empty,
                             includePath));
                         project.ProjectReferences.Add(fullPath);

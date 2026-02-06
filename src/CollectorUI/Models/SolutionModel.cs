@@ -62,7 +62,11 @@ public class SolutionModel
             var projectPathAttr = projectElement.Attribute("Path");
             if (projectPathAttr != null)
             {
-                var projectPath = Path.GetFullPath(projectPathAttr.Value, baseDir);
+                string rawPath = projectPathAttr.Value;
+                rawPath = rawPath
+                    .Replace('\\', Path.DirectorySeparatorChar)
+                    .Replace('/', Path.DirectorySeparatorChar);
+                var projectPath = Path.GetFullPath(rawPath, baseDir);
                 yield return projectPath;
             }
         }
@@ -83,7 +87,9 @@ public class SolutionModel
             var match = System.Text.RegularExpressions.Regex.Match(line, pattern, System.Text.RegularExpressions.RegexOptions.IgnoreCase);
             if (match.Success)
             {
-                var relativePath = match.Groups[1].Value.Replace('\\', Path.DirectorySeparatorChar);
+                var relativePath = match.Groups[1].Value
+                    .Replace('\\', Path.DirectorySeparatorChar)
+                    .Replace('/', Path.DirectorySeparatorChar);
                 var fullPath = Path.GetFullPath(relativePath, baseDir);
                 yield return fullPath;
             }
