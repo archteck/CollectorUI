@@ -4,6 +4,7 @@ using Avalonia.Data.Core.Plugins;
 using Avalonia.Markup.Xaml;
 using CollectorUI.ViewModels;
 using CollectorUI.Views;
+using Microsoft.Extensions.DependencyInjection;
 
 namespace CollectorUI;
 
@@ -18,9 +19,19 @@ public partial class App : Application
             // Avoid duplicate validations from both Avalonia and the CommunityToolkit.
             // More info: https://docs.avaloniaui.net/docs/guides/development-guides/data-validation#manage-validationplugins
             DisableAvaloniaDataAnnotationValidation();
+
+            // Configure DI
+            var services = new Microsoft.Extensions.DependencyInjection.ServiceCollection();
+            services.AddSingleton<CollectorUI.Services.ISelectionService, CollectorUI.Services.SelectionService>();
+            services.AddSingleton<CollectorUI.Services.IReportGeneratorService, CollectorUI.Services.ReportGeneratorServiceWrapper>();
+            services.AddSingleton<CollectorUI.Services.IUpdateService, CollectorUI.Services.UpdateServiceWrapper>();
+            services.AddSingleton<CollectorUI.ViewModels.MainWindowViewModel>();
+
+            var provider = services.BuildServiceProvider();
+
             desktop.MainWindow = new MainWindow
             {
-                DataContext = new MainWindowViewModel(),
+                DataContext = provider.GetRequiredService<CollectorUI.ViewModels.MainWindowViewModel>(),
             };
         }
 

@@ -22,7 +22,8 @@ public partial class SelectRecentDialog : Window
     private void LoadItems()
     {
         _items.Clear();
-        foreach (var path in SelectionService.GetRecentSolutions(20))
+        var selectionService = new SelectionService();
+        foreach (var path in selectionService.GetRecentSolutions(20))
         {
             _items.Add(path);
         }

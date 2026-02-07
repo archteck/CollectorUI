@@ -10,4 +10,7 @@
     <Project Path="src\CollectorUI\CollectorUI.csproj" />
     <Project Path="src\CollectorUIUpdater\CollectorUIUpdater.csproj" />
   </Folder>
+  <Folder Name="/tests/">
+    <Project Path="tests/CollectorUI.Tests/CollectorUI.Tests.csproj" />
+  </Folder>
 </Solution>

@@ -11,6 +11,10 @@ namespace CollectorUI.ViewModels;
 
 public partial class MainWindowViewModel : ViewModelBase
 {
+    private readonly CollectorUI.Services.ISelectionService _selectionService;
+    private readonly CollectorUI.Services.IReportGeneratorService _reportGeneratorService;
+    private readonly CollectorUI.Services.IUpdateService _updateService;
+
     [ObservableProperty] private string? _solutionPath;
 
     [ObservableProperty] private SolutionModel? _currentSolution;
@@ -36,7 +40,17 @@ public partial class MainWindowViewModel : ViewModelBase
     [ObservableProperty] private double _downloadProgress; // 0..1
 
     public bool CanDownloadAppUpdate => IsUpdateAvailable && !IsCheckingUpdate;
-    public MainWindowViewModel() => SolutionPath = "Please select a solution file (.sln/.slnx)";
+
+    public MainWindowViewModel(
+        CollectorUI.Services.ISelectionService? selectionService = null,
+        CollectorUI.Services.IReportGeneratorService? reportGeneratorService = null,
+        CollectorUI.Services.IUpdateService? updateService = null)
+    {
+        _selectionService = selectionService ?? new CollectorUI.Services.SelectionService();
+        _reportGeneratorService = reportGeneratorService ?? new CollectorUI.Services.ReportGeneratorServiceWrapper();
+        _updateService = updateService ?? new CollectorUI.Services.UpdateServiceWrapper();
+        SolutionPath = "Please select a solution file (.sln/.slnx)";
+    }
 
     [RelayCommand]
     public async Task SelectSolutionAsync()
@@ -86,7 +100,7 @@ public partial class MainWindowViewModel : ViewModelBase
             // Aplica estados desmarcados guardados por solução
             foreach (var project in TestProjects)
             {
-                project.ApplyDeselectionStates(SolutionPath!);
+                project.ApplyDeselectionStates(SolutionPath!, _selectionService);
             }
 
             StatusMessage = $"Loaded solution with {TestProjects.Count} test projects";
@@ -132,19 +146,19 @@ public partial class MainWindowViewModel : ViewModelBase
         {
             IsBusy = true;
             StatusMessage = "Generating coverage reports...";
-            var result = await ReportGeneratorService.CreateReportAsync(SolutionPath, TestProjects.ToList());
+            var result = await _reportGeneratorService.CreateReportAsync(SolutionPath, TestProjects.ToList());
 
             // Força o ItemsControl a atualizar para refletir HasCoverageReport/paths
             TestProjects = new ObservableCollection<ProjectModel>(TestProjects);
 
             // Persiste os últimos checks (desmarcados) por solução/projeto
-            SelectionService.SaveDeselectedForSolution(SolutionPath!, TestProjects.Select(p =>
+            _selectionService.SaveDeselectedForSolution(SolutionPath!, TestProjects.Select(p =>
                 (p.FullPath ?? string.Empty, p.GetDeselectedNamespaces())));
 
             // Atualiza a lista de recentes baseada em reports gerados
             if (!string.IsNullOrWhiteSpace(SolutionPath) && TestProjects.Any(p => p.HasCoverageReport))
             {
-                SelectionService.UpsertSolutionReport(SolutionPath!);
+                _selectionService.UpsertSolutionReport(SolutionPath!);
             }
 
             StatusMessage = result;
@@ -250,7 +264,7 @@ public partial class MainWindowViewModel : ViewModelBase
 
             if (remove)
             {
-                SelectionService.RemoveSolutionRecords(selected);
+                _selectionService.RemoveSolutionRecords(selected);
                 StatusMessage = "Removed missing solution from database.";
             }
             else
@@ -275,7 +289,7 @@ public partial class MainWindowViewModel : ViewModelBase
         {
             IsCheckingUpdate = true;
             StatusMessage = "Checking for app updates...";
-            var latest = await UpdateService.GetLatestReleaseAsync();
+            var latest = await _updateService.GetLatestReleaseAsync();
             if (latest is null)
             {
                 StatusMessage = "No suitable release asset found for your platform.";
@@ -285,7 +299,7 @@ public partial class MainWindowViewModel : ViewModelBase
             }
 
             LatestVersion = latest.TagName;
-            IsUpdateAvailable = UpdateService.IsUpdateAvailable(latest.Version);
+            IsUpdateAvailable = _updateService.IsUpdateAvailable(latest.Version);
             StatusMessage = IsUpdateAvailable
                 ? $"Update available: {latest.TagName} (asset: {latest.AssetName})."
                 : "You're on the latest version.";
@@ -307,24 +321,24 @@ public partial class MainWindowViewModel : ViewModelBase
         try
         {
             StatusMessage = "Preparing download...";
-            var latest = await UpdateService.GetLatestReleaseAsync();
+            var latest = await _updateService.GetLatestReleaseAsync();
             if (latest is null)
             {
                 StatusMessage = "No suitable release asset found.";
                 return;
             }
-            if (!UpdateService.IsUpdateAvailable(latest.Version))
+            if (!_updateService.IsUpdateAvailable(latest.Version))
             {
                 StatusMessage = "Already up to date.";
                 return;
             }
 
             var progress = new Progress<double>(p => { DownloadProgress = p; });
-            var zipPath = await UpdateService.DownloadAssetAsync(latest.AssetDownloadUrl, progress);
+            var zipPath = await _updateService.DownloadAssetAsync(latest.AssetDownloadUrl, progress);
             StatusMessage = "Download complete. Extracting...";
-            var extractedDir = UpdateService.ExtractToNewFolder(zipPath, latest.TagName);
+            var extractedDir = _updateService.ExtractToNewFolder(zipPath, latest.TagName);
             // Hand off to external updater which will copy files into current app folder and relaunch
-            var launched = UpdateService.StartUpdaterAndExit(extractedDir);
+            var launched = _updateService.StartUpdaterAndExit(extractedDir);
             if (launched)
             {
                 StatusMessage = "Updater launched. The application will close and restart after updating.";

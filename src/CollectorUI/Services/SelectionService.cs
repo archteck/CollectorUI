@@ -3,12 +3,12 @@ using Microsoft.EntityFrameworkCore;
 
 namespace CollectorUI.Services;
 
-public static class SelectionService
+public class SelectionService : ISelectionService
 {
-    static SelectionService() => AppDbContext.EnsureCreated();
+    public SelectionService() => AppDbContext.EnsureCreated();
 
     // Carrega namespaces desmarcados (IsChecked == false) para um projeto específico numa solução
-    public static HashSet<string> LoadDeselectedNamespaces(string solutionPath, string projectPath)
+    public HashSet<string> LoadDeselectedNamespaces(string solutionPath, string projectPath)
     {
         using var ctx = new AppDbContext();
         var items = ctx.NamespaceSelections
@@ -21,7 +21,7 @@ public static class SelectionService
     }
 
     // Substitui os registos de uma solução pelos estados desmarcados atuais
-    public static void SaveDeselectedForSolution(string solutionPath, IEnumerable<(string ProjectPath, IEnumerable<string> DeselectedNamespaces)> data)
+    public void SaveDeselectedForSolution(string solutionPath, IEnumerable<(string ProjectPath, IEnumerable<string> DeselectedNamespaces)> data)
     {
         using var ctx = new AppDbContext();
         using var tx = ctx.Database.BeginTransaction();
@@ -59,7 +59,7 @@ public static class SelectionService
     }
 
     // Regista/atualiza a solução para a qual se gerou report
-    public static void UpsertSolutionReport(string solutionPath)
+    public void UpsertSolutionReport(string solutionPath)
     {
         using var ctx = new AppDbContext();
         var existing = ctx.SolutionReports.FirstOrDefault(r => r.SolutionPath == solutionPath);
@@ -83,7 +83,7 @@ public static class SelectionService
     }
 
     // Obtém lista de soluções recentes baseadas nos reports gerados
-    public static IReadOnlyList<string> GetRecentSolutions(int limit = 10)
+    public IReadOnlyList<string> GetRecentSolutions(int limit = 10)
     {
         using var ctx = new AppDbContext();
         var recent = ctx.SolutionReports
@@ -97,7 +97,7 @@ public static class SelectionService
     }
 
     // Remove todos os registos associados a uma solução
-    public static void RemoveSolutionRecords(string solutionPath)
+    public void RemoveSolutionRecords(string solutionPath)
     {
         using var ctx = new AppDbContext();
 

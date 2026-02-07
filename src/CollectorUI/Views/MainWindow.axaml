@@ -2,14 +2,13 @@
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:vm="using:CollectorUI.ViewModels"
         xmlns:models="using:CollectorUI.Models"
-        xmlns:controls="using:CollectorUI.Controls"
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         mc:Ignorable="d" d:DesignWidth="800" d:DesignHeight="450"
         x:Class="CollectorUI.Views.MainWindow"
         x:DataType="vm:MainWindowViewModel"
         Icon="/Assets/avalonia-logo.ico"
-        SystemDecorations="BorderOnly"
+        SystemDecorations="Full"
         WindowState="Normal"
         Height="600"
         Width="600"
@@ -22,17 +21,14 @@
     </Design.DataContext>
     <Grid>
         <Grid.RowDefinitions>
-            <RowDefinition Height="30" />
             <RowDefinition Height="*" />
             <RowDefinition Height="Auto" />
         </Grid.RowDefinitions>
 
-        <!-- Title Bar with Custom Window Controls -->
-        <controls:TitleBar Grid.Row="0"
-                           WindowTitle="{Binding Title, RelativeSource={RelativeSource AncestorType=Window}}" />
+
 
         <!-- Main Content -->
-        <Grid Grid.Row="1">
+        <Grid Grid.Row="0">
             <Grid.RowDefinitions>
                 <RowDefinition Height="Auto" />
                 <RowDefinition Height="*" />
@@ -124,7 +120,7 @@
         </Grid>
 
         <!-- Status Bar / Footer -->
-        <Grid Grid.Row="2" Background="#f0f0f0">
+        <Grid Grid.Row="1" Background="#f0f0f0">
             <TextBlock Text="{Binding StatusMessage}" Margin="10,5" Foreground="Black" />
             <ProgressBar IsIndeterminate="True" IsVisible="{Binding IsBusy}"
                          VerticalAlignment="Center" Height="2" />

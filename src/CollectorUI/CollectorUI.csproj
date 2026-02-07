@@ -38,6 +38,7 @@
     </PackageReference>
     <PackageReference Include="Microsoft.EntityFrameworkCore.Sqlite"/>
     <PackageReference Include="Serilog"/>
-    <PackageReference Include="Serilog.Sinks.File"/>
+    <PackageReference Include="Serilog.Sinks.File"/>    
+    <PackageReference Include="Microsoft.Extensions.DependencyInjection" />  
   </ItemGroup>
 </Project>

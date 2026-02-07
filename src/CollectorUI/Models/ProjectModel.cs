@@ -396,14 +396,14 @@ public class ProjectModel
     /// Aplica estados desmarcados guardados em BD para esta solução/projeto (default permanece true).
     /// </summary>
     /// <param name="solutionPath">Caminho completo da solução.</param>
-    public void ApplyDeselectionStates(string solutionPath)
+    public void ApplyDeselectionStates(string solutionPath, CollectorUI.Services.ISelectionService selectionService)
     {
-        if (string.IsNullOrWhiteSpace(solutionPath) || string.IsNullOrWhiteSpace(FullPath))
+        if (string.IsNullOrWhiteSpace(solutionPath) || string.IsNullOrWhiteSpace(FullPath) || selectionService is null)
         {
             return;
         }
 
-        var deselected = SelectionService.LoadDeselectedNamespaces(solutionPath, FullPath!);
+        var deselected = selectionService.LoadDeselectedNamespaces(solutionPath, FullPath!);
         if (deselected.Count == 0)
         {
             return;
