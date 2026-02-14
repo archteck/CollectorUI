@@ -11,10 +11,10 @@
     <Product>Collector UI</Product>
     <!-- App versioning -->
     <!-- Set these to control the version shown in the app and used by the updater. -->
-    <Version>2.6.3</Version>
-    <AssemblyVersion>2.6.3.0</AssemblyVersion>
-    <FileVersion>2.6.3.0</FileVersion>
-    <InformationalVersion>2.6.3</InformationalVersion>
+    <Version>3.0.0</Version>
+    <AssemblyVersion>3.0.0.0</AssemblyVersion>
+    <FileVersion>3.0.0.0</FileVersion>
+    <InformationalVersion>3.0.0</InformationalVersion>
   </PropertyGroup>
   <ItemGroup>
     <AvaloniaResource Include="Assets\**"/>
@@ -38,7 +38,7 @@
     </PackageReference>
     <PackageReference Include="Microsoft.EntityFrameworkCore.Sqlite"/>
     <PackageReference Include="Serilog"/>
-    <PackageReference Include="Serilog.Sinks.File"/>    
-    <PackageReference Include="Microsoft.Extensions.DependencyInjection" />  
+    <PackageReference Include="Serilog.Sinks.File"/>
+    <PackageReference Include="Microsoft.Extensions.DependencyInjection" />
   </ItemGroup>
 </Project>
