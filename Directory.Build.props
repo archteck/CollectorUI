@@ -6,9 +6,5 @@
     <TargetFramework>net10.0</TargetFramework>
     <Nullable>enable</Nullable>
     <ImplicitUsings>enable</ImplicitUsings>
-    <!--#if (false) -->
-    <EnableOpenApiDoc>true</EnableOpenApiDoc>
-    <AddTests>true</AddTests>
-    <!--#endif -->
   </PropertyGroup>
 </Project>
