@@ -76,6 +76,25 @@ public class ProjectModelNamespaceTests
         Assert.NotNull(root);
     }
 
+    [Fact(DisplayName = "Large namespace set keeps tree functional during filtering")]
+    public void FilterText_LargeNamespaceSet_RebuildsTreeWithoutLosingData()
+    {
+        var model = new ProjectModel
+        {
+            IsTestProject = false,
+            Namespaces = CreateLargeNamespaceSet(2000)
+        };
+
+        model.BuildNamespaceTree();
+        Assert.NotEmpty(model.NamespaceTree);
+
+        model.FilterText = "Module42";
+        Assert.NotEmpty(model.NamespaceTree);
+
+        model.FilterText = null;
+        Assert.NotEmpty(model.NamespaceTree);
+    }
+
     private static ProjectModel CreateModelWithSampleNamespaces()
     {
         var model = new ProjectModel
@@ -92,6 +111,17 @@ public class ProjectModelNamespaceTests
 
         model.BuildNamespaceTree();
         return model;
+    }
+
+    private static List<NamespaceModel> CreateLargeNamespaceSet(int count)
+    {
+        var list = new List<NamespaceModel>(capacity: count);
+        for (int i = 0; i < count; i++)
+        {
+            list.Add(new NamespaceModel { Name = $"Acme.Module{i}.Feature{i % 10}.Part{i % 5}" });
+        }
+
+        return list;
     }
 
     private static NamespaceNodeViewModel? FindNode(IEnumerable<NamespaceNodeViewModel> roots, string name)

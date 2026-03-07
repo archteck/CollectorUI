@@ -1,4 +1,5 @@
 ﻿using System.Xml.Linq;
+using System.Diagnostics;
 using CollectorUI.ViewModels;
 using System.Collections.ObjectModel;
 using CollectorUI.Services;
@@ -275,9 +276,16 @@ public class ProjectModel
     // preservando os estados de seleção atuais.
     private void ApplyFilter()
     {
+        var stopwatch = Stopwatch.StartNew();
         var selectionMap = CaptureSelectionStates();
         var prevExpansion = CaptureExpansionStates();
         RebuildVisibleTree(selectionMap,prevExpansion);
+        stopwatch.Stop();
+
+        if (stopwatch.ElapsedMilliseconds >= 50)
+        {
+            Debug.WriteLine($"[ProjectModel] Filter rebuild took {stopwatch.ElapsedMilliseconds} ms for project '{Name}'.");
+        }
 
     }
 
