@@ -51,6 +51,7 @@
                     <Button Content="Select All" Command="{Binding SelectAllProjectsCommand}" Margin="0,0,10,0" MinWidth="110" />
                     <Button Content="Unselect All" Command="{Binding UnselectAllProjectsCommand}" Margin="0,0,10,0" MinWidth="110" />
                     <Button Content="Generate Report" Command="{Binding GenerateCoverageCommand}" IsVisible="{Binding CanGenerateCoverage}" MinWidth="140" />
+                    <Button Content="Cancel" Command="{Binding CancelOperationCommand}" IsVisible="{Binding IsOperationCancelable}" Margin="10,0,0,0" MinWidth="100" />
                 </StackPanel>
                 <Border Margin="0,10,0,0" Background="#FFF8DB" BorderBrush="#E0C200" BorderThickness="1" CornerRadius="4" Padding="10">
                     <TextBlock Text="Note: Test projects must reference the 'coverlet.msbuild' package to collect code coverage."
@@ -84,7 +85,23 @@
             </StackPanel>
 
             <!-- Content Area -->
-            <TabControl Grid.Row="1" Margin="10,0,10,10" ItemsSource="{Binding TestProjects}">
+            <Border Grid.Row="1"
+                    Margin="10,0,10,10"
+                    Padding="12"
+                    Background="#FFF8DB"
+                    BorderBrush="#E0C200"
+                    BorderThickness="1"
+                    CornerRadius="4"
+                    IsVisible="{Binding HasNoTestProjects}">
+                <TextBlock Text="No test projects were detected in this solution. Ensure your test projects reference Microsoft.NET.Test.Sdk (or xUnit/NUnit/MSTest packages)."
+                           Foreground="#6B5900"
+                           TextWrapping="Wrap" />
+            </Border>
+
+            <TabControl Grid.Row="1"
+                        Margin="10,0,10,10"
+                        ItemsSource="{Binding TestProjects}"
+                        IsVisible="{Binding HasTestProjects}">
                 <TabControl.TabStripPlacement>Top</TabControl.TabStripPlacement>
                 <TabControl.ItemTemplate>
                     <DataTemplate>
@@ -110,14 +127,29 @@
                             <TextBox Grid.Row="2"
                                      Margin="0,0,0,10"
                                      Watermark="Filter namespaces..."
-                                     Text="{Binding FilterText, UpdateSourceTrigger=PropertyChanged}" />
+                                     Text="{Binding FilterText, UpdateSourceTrigger=PropertyChanged, Delay=220}" />
 
-                            <TreeDataGrid Grid.Row="3"
-                                          Source="{Binding Source}"
-                                          HorizontalAlignment="Stretch"
-                                          VerticalAlignment="Stretch"
-                                          MinWidth="360"
-                                          MinHeight="240" />
+                            <TreeView Grid.Row="3"
+                                      x:CompileBindings="False"
+                                      ItemsSource="{Binding NamespaceTree}"
+                                      HorizontalAlignment="Stretch"
+                                      VerticalAlignment="Stretch"
+                                      MinWidth="360"
+                                      MinHeight="240">
+                                <TreeView.Styles>
+                                    <Style Selector="TreeViewItem">
+                                        <Setter Property="IsExpanded" Value="{Binding IsExpanded, Mode=TwoWay}" />
+                                    </Style>
+                                </TreeView.Styles>
+                                <TreeView.ItemTemplate>
+                                    <TreeDataTemplate ItemsSource="{Binding Children}">
+                                        <StackPanel Orientation="Horizontal" Spacing="8">
+                                            <CheckBox IsChecked="{Binding IsChecked, Mode=TwoWay}" VerticalAlignment="Center" />
+                                            <TextBlock Text="{Binding DisplayName}" VerticalAlignment="Center" />
+                                        </StackPanel>
+                                    </TreeDataTemplate>
+                                </TreeView.ItemTemplate>
+                            </TreeView>
                         </Grid>
                     </DataTemplate>
                 </TabControl.ContentTemplate>

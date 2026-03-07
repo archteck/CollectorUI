@@ -3,29 +3,41 @@ using Avalonia;
 using Avalonia.Controls.ApplicationLifetimes;
 using Avalonia.Platform.Storage;
 using CollectorUI.Models;
-using CollectorUI.Services;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 
 namespace CollectorUI.ViewModels;
 
-public partial class MainWindowViewModel : ViewModelBase
+public partial class MainWindowViewModel : ViewModelBase, IDisposable
 {
-    private readonly CollectorUI.Services.ISelectionService _selectionService;
-    private readonly CollectorUI.Services.IReportGeneratorService _reportGeneratorService;
-    private readonly CollectorUI.Services.IUpdateService _updateService;
+    private readonly Services.ISelectionService _selectionService;
+    private readonly Services.IReportGeneratorService _reportGeneratorService;
+    private readonly Services.IUpdateService _updateService;
+    private CancellationTokenSource? _operationCts;
 
     [ObservableProperty] private string? _solutionPath;
 
     [ObservableProperty] private SolutionModel? _currentSolution;
+    public void Dispose()
+    {
+        EndCancelableOperation();
+        GC.SuppressFinalize(this);
+    }
 
-    [ObservableProperty] private ObservableCollection<ProjectModel> _testProjects = new();
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(HasTestProjects))]
+    [NotifyPropertyChangedFor(nameof(HasNoTestProjects))]
+    private ObservableCollection<ProjectModel> _testProjects = new();
 
     [ObservableProperty] private bool _isBusy;
 
     [ObservableProperty] private string? _statusMessage;
 
     [ObservableProperty] private bool _canGenerateCoverage;
+
+    [ObservableProperty]
+    [NotifyCanExecuteChangedFor(nameof(CancelOperationCommand))]
+    private bool _isOperationCancelable;
 
     // App update related
     [ObservableProperty] [NotifyPropertyChangedFor(nameof(CanDownloadAppUpdate))]
@@ -41,14 +53,18 @@ public partial class MainWindowViewModel : ViewModelBase
 
     public bool CanDownloadAppUpdate => IsUpdateAvailable && !IsCheckingUpdate;
 
+    public bool HasTestProjects => TestProjects.Count > 0;
+
+    public bool HasNoTestProjects => !HasTestProjects;
+
     public MainWindowViewModel(
-        CollectorUI.Services.ISelectionService? selectionService = null,
-        CollectorUI.Services.IReportGeneratorService? reportGeneratorService = null,
-        CollectorUI.Services.IUpdateService? updateService = null)
+        Services.ISelectionService? selectionService = null,
+        Services.IReportGeneratorService? reportGeneratorService = null,
+        Services.IUpdateService? updateService = null)
     {
-        _selectionService = selectionService ?? new CollectorUI.Services.SelectionService();
-        _reportGeneratorService = reportGeneratorService ?? new CollectorUI.Services.ReportGeneratorServiceWrapper();
-        _updateService = updateService ?? new CollectorUI.Services.UpdateServiceWrapper();
+        _selectionService = selectionService ?? new Services.SelectionService();
+        _reportGeneratorService = reportGeneratorService ?? new Services.ReportGeneratorServiceWrapper();
+        _updateService = updateService ?? new Services.UpdateServiceWrapper();
         SolutionPath = "Please select a solution file (.sln/.slnx)";
     }
 
@@ -87,11 +103,14 @@ public partial class MainWindowViewModel : ViewModelBase
 
         try
         {
+            var cancellationToken = BeginCancelableOperation();
             IsBusy = true;
             StatusMessage = "Loading solution...";
             SolutionPath = path;
 
-            var parsed = await Task.Run(() => SolutionModel.ParseFromFile(path));
+            var parsed = await Task.Run(() => SolutionModel.ParseFromFile(path, cancellationToken), cancellationToken);
+
+            cancellationToken.ThrowIfCancellationRequested();
 
             // Atribuições em thread da UI
             CurrentSolution = parsed;
@@ -105,6 +124,10 @@ public partial class MainWindowViewModel : ViewModelBase
 
             StatusMessage = $"Loaded solution with {TestProjects.Count} test projects";
         }
+        catch (OperationCanceledException)
+        {
+            StatusMessage = "Operation canceled.";
+        }
         catch (Exception ex)
         {
             StatusMessage = $"Error loading solution: {ex.Message}";
@@ -112,6 +135,7 @@ public partial class MainWindowViewModel : ViewModelBase
         finally
         {
             IsBusy = false;
+            EndCancelableOperation();
         }
     }
 
@@ -144,9 +168,12 @@ public partial class MainWindowViewModel : ViewModelBase
     {
         try
         {
+            var cancellationToken = BeginCancelableOperation();
             IsBusy = true;
             StatusMessage = "Generating coverage reports...";
-            var result = await _reportGeneratorService.CreateReportAsync(SolutionPath, TestProjects.ToList());
+            var result = await _reportGeneratorService.CreateReportAsync(SolutionPath, TestProjects.ToList(), cancellationToken);
+
+            cancellationToken.ThrowIfCancellationRequested();
 
             // Força o ItemsControl a atualizar para refletir HasCoverageReport/paths
             TestProjects = new ObservableCollection<ProjectModel>(TestProjects);
@@ -163,6 +190,10 @@ public partial class MainWindowViewModel : ViewModelBase
 
             StatusMessage = result;
         }
+        catch (OperationCanceledException)
+        {
+            StatusMessage = "Operation canceled.";
+        }
         catch (Exception ex)
         {
             StatusMessage = $"Error generating coverage: {ex.Message}";
@@ -170,7 +201,43 @@ public partial class MainWindowViewModel : ViewModelBase
         finally
         {
             IsBusy = false;
+            EndCancelableOperation();
         }
+    }
+
+    [RelayCommand(CanExecute = nameof(IsOperationCancelable))]
+    public void CancelOperation()
+    {
+        if (_operationCts is null || _operationCts.IsCancellationRequested)
+        {
+            return;
+        }
+
+        StatusMessage = "Cancelling current operation...";
+        _operationCts.Cancel();
+    }
+
+    private CancellationToken BeginCancelableOperation()
+    {
+        EndCancelableOperation();
+
+        _operationCts = new CancellationTokenSource();
+        IsOperationCancelable = true;
+
+        return _operationCts.Token;
+    }
+
+    private void EndCancelableOperation()
+    {
+        IsOperationCancelable = false;
+
+        if (_operationCts is null)
+        {
+            return;
+        }
+
+        _operationCts.Dispose();
+        _operationCts = null;
     }
 
     partial void OnTestProjectsChanged(ObservableCollection<ProjectModel> value) => UpdateCanGenerateCoverage();
@@ -201,7 +268,7 @@ public partial class MainWindowViewModel : ViewModelBase
     [RelayCommand]
     public void OpenReport(ProjectModel? project)
     {
-        if (project?.HasCoverageReport == true && System.IO.File.Exists(project.CoverageReportIndexPath))
+        if (project?.HasCoverageReport == true && File.Exists(project.CoverageReportIndexPath))
         {
             try
             {
@@ -239,7 +306,7 @@ public partial class MainWindowViewModel : ViewModelBase
             }
 
             // Abre o diálogo para o utilizador escolher uma solução recente
-            var picker = new CollectorUI.Views.Dialogs.SelectRecentDialog();
+            var picker = new Views.Dialogs.SelectRecentDialog();
             var selected = await picker.ShowDialog<string?>(window);
 
             if (string.IsNullOrWhiteSpace(selected))
@@ -255,11 +322,9 @@ public partial class MainWindowViewModel : ViewModelBase
             }
 
             // Se não existir, perguntar se pretende remover da lista/BD
-            var confirm = new CollectorUI.Views.Dialogs.ConfirmDialog(
+            var confirm = new Views.Dialogs.ConfirmDialog(
                 "File not found",
-                $"The solution file was not found:\n{selected}\n\nRemove it from recent and database?",
-                "Yes",
-                "No");
+                $"The solution file was not found:\n{selected}\n\nRemove it from recent and database?");
             var remove = await confirm.ShowDialog<bool>(window);
 
             if (remove)

@@ -7,10 +7,13 @@ namespace CollectorUI.Services;
 
 public static partial class ReportGeneratorService
 {
-    public static async Task<string> CreateReportAsync(string? solutionPath, List<ProjectModel> testProjects)
+    public static async Task<string> CreateReportAsync(string? solutionPath, List<ProjectModel> testProjects,
+        CancellationToken cancellationToken = default)
     {
+        cancellationToken.ThrowIfCancellationRequested();
+
         // Garantir que o reportgenerator está instalado
-        var ensured = await EnsureReportGeneratorInstalledAsync();
+        var ensured = await EnsureReportGeneratorInstalledAsync(cancellationToken);
         if (!ensured.success)
         {
             Log.Error("Failed to ensure reportgenerator tool: {Message}", ensured.message);
@@ -28,7 +31,7 @@ public static partial class ReportGeneratorService
 
         Log.Information("Building solution {SolutionPath}", solutionPath);
         //build da slnx
-        var buildResult = await BuildSolutionAsync(solutionPath);
+        var buildResult = await BuildSolutionAsync(solutionPath, cancellationToken);
         Log.Debug("Build result for {SolutionPath}: {BuildResult}", solutionPath, buildResult);
         if (!buildResult.StartsWith("Build succeeded", StringComparison.OrdinalIgnoreCase))
         {
@@ -52,6 +55,8 @@ public static partial class ReportGeneratorService
 
         foreach (var testProject in selectedProjects)
         {
+            cancellationToken.ThrowIfCancellationRequested();
+
             var projectName = string.IsNullOrWhiteSpace(testProject.Name) ? testProject.FullPath : testProject.Name;
 
             //include e exclude do que é para in/exc
@@ -76,7 +81,7 @@ public static partial class ReportGeneratorService
 
             //criar cobertura para cada projecto
             var (success, indexPath, message) =
-                await CreateCoberturaAndReportAsync(testProject.FullPath!, include, exclude);
+                await CreateCoberturaAndReportAsync(testProject.FullPath!, include, exclude, cancellationToken);
             if (success && !string.IsNullOrWhiteSpace(indexPath))
             {
                 testProject.CoverageReportIndexPath = indexPath;
@@ -90,7 +95,7 @@ public static partial class ReportGeneratorService
             }
         }
 
-        await Task.Delay(1);
+        await Task.Delay(1, cancellationToken);
 
         if (successCount == 0)
         {
@@ -112,7 +117,7 @@ public static partial class ReportGeneratorService
         return "Success";
     }
 
-    private static async Task<string> BuildSolutionAsync(string solutionPath)
+    private static async Task<string> BuildSolutionAsync(string solutionPath, CancellationToken cancellationToken)
     {
         Log.Information("Starting dotnet build for {SolutionPath}", solutionPath);
 
@@ -136,9 +141,24 @@ public static partial class ReportGeneratorService
                 return "Failed to start build process.";
             }
 
-            string output = await process.StandardOutput.ReadToEndAsync();
-            string error = await process.StandardError.ReadToEndAsync();
-            await process.WaitForExitAsync();
+            using var registration = cancellationToken.Register(() =>
+            {
+                try
+                {
+                    if (!process.HasExited)
+                    {
+                        process.Kill(entireProcessTree: true);
+                    }
+                }
+                catch
+                {
+                    // Ignore race conditions when process exits while cancelling.
+                }
+            });
+
+            string output = await process.StandardOutput.ReadToEndAsync(cancellationToken);
+            string error = await process.StandardError.ReadToEndAsync(cancellationToken);
+            await process.WaitForExitAsync(cancellationToken);
 
             if (process.ExitCode == 0)
             {
@@ -151,6 +171,11 @@ public static partial class ReportGeneratorService
             Log.Debug("Build stderr: {Stderr}", error);
             return $"Build failed:\n{error}";
         }
+        catch (OperationCanceledException)
+        {
+            Log.Warning("Build cancelled for {SolutionPath}", solutionPath);
+            return "Operation canceled.";
+        }
         catch (Exception ex)
         {
             Log.Error(ex, "Exception during build for {SolutionPath}", solutionPath);
@@ -159,7 +184,7 @@ public static partial class ReportGeneratorService
     }
 
     private static async Task<(bool success, string? indexPath, string message)> CreateCoberturaAndReportAsync(
-        string projectPath, string include, string exclude)
+        string projectPath, string include, string exclude, CancellationToken cancellationToken)
     {
         Log.Information("Running dotnet test for project {ProjectPath}", projectPath);
         Log.Debug("Coverage filters for {ProjectPath} Include='{Include}' Exclude='{Exclude}'", projectPath, include,
@@ -204,9 +229,24 @@ public static partial class ReportGeneratorService
                 return (false, null, "Failed to start build process.");
             }
 
-            string output = await process.StandardOutput.ReadToEndAsync();
-            string error = await process.StandardError.ReadToEndAsync();
-            await process.WaitForExitAsync();
+            using var registration = cancellationToken.Register(() =>
+            {
+                try
+                {
+                    if (!process.HasExited)
+                    {
+                        process.Kill(entireProcessTree: true);
+                    }
+                }
+                catch
+                {
+                    // Ignore race conditions when process exits while cancelling.
+                }
+            });
+
+            string output = await process.StandardOutput.ReadToEndAsync(cancellationToken);
+            string error = await process.StandardError.ReadToEndAsync(cancellationToken);
+            await process.WaitForExitAsync(cancellationToken);
 
             if (process.ExitCode != 0)
             {
@@ -232,10 +272,11 @@ public static partial class ReportGeneratorService
 
                 var rgOutput = await RunCommand(
                     "reportgenerator",
-                    $"-reports:{coberturaPath}",
+                    [$"-reports:{coberturaPath}",
                     $"-targetdir:{targetDir}",
                     $"-historydir:{historyDir}",
-                    "-reporttypes:Html"
+                    "-reporttypes:Html"],
+                    cancellationToken
                 );
 
                 Log.Debug("reportgenerator output for {ProjectPath}: {Output}", projectPath, rgOutput);
@@ -249,6 +290,11 @@ public static partial class ReportGeneratorService
             // Se não encontrarmos o caminho, devolvemos o output original como mensagem
             return (false, null, $"Build succeeded but coverage path not found:\n{output}");
         }
+        catch (OperationCanceledException)
+        {
+            Log.Warning("Coverage generation cancelled for {ProjectPath}", projectPath);
+            return (false, null, "Operation canceled.");
+        }
         catch (Exception ex)
         {
             Log.Error(ex, "Exception during coverage/report generation for {ProjectPath}", projectPath);
@@ -256,7 +302,7 @@ public static partial class ReportGeneratorService
         }
     }
 
-    private static async Task<string> RunCommand(string file, params string[] args)
+    private static async Task<string> RunCommand(string file, string[] args, CancellationToken cancellationToken)
     {
         Log.Debug("Executing command: {File} {Args}", file, string.Join(" ", args));
 
@@ -280,6 +326,21 @@ public static partial class ReportGeneratorService
 
         using (var proc = Process.Start(psi)!)
         {
+            using var registration = cancellationToken.Register(() =>
+            {
+                try
+                {
+                    if (!proc.HasExited)
+                    {
+                        proc.Kill(entireProcessTree: true);
+                    }
+                }
+                catch
+                {
+                    // Ignore race conditions when process exits while cancelling.
+                }
+            });
+
             // Asynchronously read standard output and standard error
             var outputTask = Task.Run(() =>
             {
@@ -292,7 +353,7 @@ public static partial class ReportGeneratorService
                         outputBuilder.AppendLine(line);
                     }
                 }
-            });
+            }, cancellationToken);
 
             var errorTask = Task.Run(() =>
             {
@@ -305,9 +366,9 @@ public static partial class ReportGeneratorService
                         errorBuilder.AppendLine(line);
                     }
                 }
-            });
+            }, cancellationToken);
 
-            await Task.WhenAll(outputTask, errorTask, proc.WaitForExitAsync());
+            await Task.WhenAll(outputTask, errorTask, proc.WaitForExitAsync(cancellationToken));
             Log.Debug("Command exited with code {ExitCode}", proc.ExitCode);
         }
 
@@ -364,19 +425,19 @@ public static partial class ReportGeneratorService
         return false;
     }
 
-    private static async Task<(bool success, string message)> EnsureReportGeneratorInstalledAsync()
+    private static async Task<(bool success, string message)> EnsureReportGeneratorInstalledAsync(CancellationToken cancellationToken)
     {
-        var listOut = await RunCommand("dotnet", "tool", "list", "-g");
+        var listOut = await RunCommand("dotnet", ["tool", "list", "-g"], cancellationToken);
         if (listOut.Contains("dotnet-reportgenerator-globaltool", StringComparison.OrdinalIgnoreCase))
         {
             return (true, "Already installed");
         }
 
-        var installOut = await RunCommand("dotnet", "tool", "install", "-g", "dotnet-reportgenerator-globaltool");
+        var installOut = await RunCommand("dotnet", ["tool", "install", "-g", "dotnet-reportgenerator-globaltool"], cancellationToken);
 
         // Se a instalação falhar, o RunCommand já inclui stderr no retorno
         // Vamos validar instalação novamente para confirmar
-        var postCheck = await RunCommand("dotnet", "tool", "list", "-g");
+        var postCheck = await RunCommand("dotnet", ["tool", "list", "-g"], cancellationToken);
         var ok = postCheck.Contains("dotnet-reportgenerator-globaltool", StringComparison.OrdinalIgnoreCase);
         return (ok, ok ? "Installed" : installOut);
     }

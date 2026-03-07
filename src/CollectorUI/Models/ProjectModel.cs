@@ -1,9 +1,7 @@
 ﻿using System.Xml.Linq;
+using System.Diagnostics;
 using CollectorUI.ViewModels;
 using System.Collections.ObjectModel;
-using Avalonia.Controls;
-using Avalonia.Controls.Models.TreeDataGrid;
-using CollectorUI.Services;
 
 namespace CollectorUI.Models;
 
@@ -26,8 +24,6 @@ public class ProjectModel
     /// </summary>
     public ObservableCollection<NamespaceNodeViewModel> NamespaceTree { get; }
 
-    public HierarchicalTreeDataGridSource<NamespaceNodeViewModel>? Source { get; set; }
-
     private static readonly char[] s_separator = ['\r', '\n'];
 
     public static ProjectModel FromProjectFile(string projectPath)
@@ -43,24 +39,21 @@ public class ProjectModel
             if (ns != null)
             {
                 var packageRefs = doc.Descendants(ns + "PackageReference");
-                var hasCoverlet = false;
                 var hasTestFramework = false;
                 foreach (var packageRef in packageRefs)
                 {
                     var packageName = packageRef.Attribute("Include")?.Value;
                     if (packageName != null)
                     {
-                        if (packageName.Contains("coverlet.msbuild"))
-                        {
-                            hasCoverlet = true;
-                        }
                         if (packageName.Contains("xunit") ||
                             packageName.Contains("NUnit") ||
-                            packageName.Contains("MSTest"))
+                            packageName.Contains("MSTest") ||
+                            packageName.Contains("Microsoft.NET.Test.Sdk"))
                         {
                             hasTestFramework = true;
                         }
-                        if(hasCoverlet && hasTestFramework)
+
+                        if (hasTestFramework)
                         {
                             project.IsTestProject = true;
                             break;
@@ -195,6 +188,19 @@ public class ProjectModel
                     }
                 }
             }
+
+            // Fallback: if dependency namespaces are unavailable, show the test project's own namespaces
+            // so the tree does not appear empty.
+            if (nsStrings.Count == 0)
+            {
+                foreach (var ns in Namespaces)
+                {
+                    if (!string.IsNullOrWhiteSpace(ns.Name))
+                    {
+                        nsStrings.Add(ns.Name!);
+                    }
+                }
+            }
         }
         else
         {
@@ -269,12 +275,17 @@ public class ProjectModel
     // preservando os estados de seleção atuais.
     private void ApplyFilter()
     {
+        var stopwatch = Stopwatch.StartNew();
         var selectionMap = CaptureSelectionStates();
         var prevExpansion = CaptureExpansionStates();
         RebuildVisibleTree(selectionMap,prevExpansion);
+        stopwatch.Stop();
 
-        // Recria a source para garantir que o estado IsExpanded é respeitado após filtro.
-        RecreateSource();
+        if (stopwatch.ElapsedMilliseconds >= 50)
+        {
+            Debug.WriteLine($"[ProjectModel] Filter rebuild took {stopwatch.ElapsedMilliseconds} ms for project '{Name}'.");
+        }
+
     }
 
     // Captura o estado de seleção atual por nome de namespace.
@@ -331,7 +342,9 @@ public class ProjectModel
 
         foreach (var root in _allNamespaceRoots)
         {
-            var clone = CloneFiltered(root, term, selectionMap, expansionMap);
+            var clone = term is null
+                ? CloneAll(root, selectionMap, expansionMap)
+                : CloneFiltered(root, term, selectionMap, expansionMap);
             if (clone is not null)
             {
                 // Expande todos quando há filtro para facilitar a visualização.
@@ -342,6 +355,28 @@ public class ProjectModel
                 NamespaceTree.Add(clone);
             }
         }
+    }
+
+    // Clona a árvore completa sem avaliação de filtro (caminho rápido para term nulo).
+    private static NamespaceNodeViewModel CloneAll(
+        NamespaceNodeViewModel node,
+        Dictionary<string, bool> selectionMap,
+        Dictionary<string, bool> expansionMap)
+    {
+        var clone = new NamespaceNodeViewModel(node.Name)
+        {
+            IsChecked = selectionMap.TryGetValue(node.Name, out var isChecked) ? isChecked : true,
+            IsExpanded = expansionMap.TryGetValue(node.Name, out var isExp) ? isExp : node.IsExpanded
+        };
+
+        foreach (var child in node.Children)
+        {
+            var childClone = CloneAll(child, selectionMap, expansionMap);
+            childClone.Parent = clone;
+            clone.Children.Add(childClone);
+        }
+
+        return clone;
     }
 
     // Clona o nó aplicando o filtro; retorna null se nem o nó nem os descendentes combinarem.
@@ -396,7 +431,7 @@ public class ProjectModel
     /// Aplica estados desmarcados guardados em BD para esta solução/projeto (default permanece true).
     /// </summary>
     /// <param name="solutionPath">Caminho completo da solução.</param>
-    public void ApplyDeselectionStates(string solutionPath, CollectorUI.Services.ISelectionService selectionService)
+    public void ApplyDeselectionStates(string solutionPath, Services.ISelectionService selectionService)
     {
         if (string.IsNullOrWhiteSpace(solutionPath) || string.IsNullOrWhiteSpace(FullPath) || selectionService is null)
         {
@@ -470,25 +505,7 @@ public class ProjectModel
         NamespaceTree.Clear();
         RebuildVisibleTree(prevSelection, prevExpansion);
 
-        // (Re)cria a fonte (Source) – ligar expansão ao IsExpanded.
-        RecreateSource();
     }
-
-    // Helper para recriar a fonte com colunas e binding de expansão.
-    private void RecreateSource() =>
-        Source = new HierarchicalTreeDataGridSource<NamespaceNodeViewModel>(NamespaceTree)
-        {
-            Columns =
-            {
-                new CheckBoxColumn<NamespaceNodeViewModel>("Selected", x => x.IsChecked,
-                    (x, value) => x.IsChecked = value),
-                new HierarchicalExpanderColumn<NamespaceNodeViewModel>(
-                    new TextColumn<NamespaceNodeViewModel, string>
-                        ("Namespace", x => x.Name),
-                    x => x.Children,
-                    isExpandedSelector: x => x.IsExpanded)
-            },
-        };
 
     /// <summary>
     /// Retorna a lista de namespaces selecionados (apenas maiores pais, sem filhos redundantes).

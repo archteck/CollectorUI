@@ -2,7 +2,6 @@ using Avalonia;
 using Avalonia.Controls.ApplicationLifetimes;
 using Avalonia.Data.Core.Plugins;
 using Avalonia.Markup.Xaml;
-using CollectorUI.ViewModels;
 using CollectorUI.Views;
 using Microsoft.Extensions.DependencyInjection;
 
@@ -21,17 +20,17 @@ public partial class App : Application
             DisableAvaloniaDataAnnotationValidation();
 
             // Configure DI
-            var services = new Microsoft.Extensions.DependencyInjection.ServiceCollection();
-            services.AddSingleton<CollectorUI.Services.ISelectionService, CollectorUI.Services.SelectionService>();
-            services.AddSingleton<CollectorUI.Services.IReportGeneratorService, CollectorUI.Services.ReportGeneratorServiceWrapper>();
-            services.AddSingleton<CollectorUI.Services.IUpdateService, CollectorUI.Services.UpdateServiceWrapper>();
-            services.AddSingleton<CollectorUI.ViewModels.MainWindowViewModel>();
+            var services = new ServiceCollection();
+            services.AddSingleton<Services.ISelectionService, Services.SelectionService>();
+            services.AddSingleton<Services.IReportGeneratorService, Services.ReportGeneratorServiceWrapper>();
+            services.AddSingleton<Services.IUpdateService, Services.UpdateServiceWrapper>();
+            services.AddSingleton<ViewModels.MainWindowViewModel>();
 
             var provider = services.BuildServiceProvider();
 
             desktop.MainWindow = new MainWindow
             {
-                DataContext = provider.GetRequiredService<CollectorUI.ViewModels.MainWindowViewModel>(),
+                DataContext = provider.GetRequiredService<ViewModels.MainWindowViewModel>(),
             };
         }
 

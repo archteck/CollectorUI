@@ -14,6 +14,11 @@ public partial class NamespaceNodeViewModel : ObservableObject
     public string Name { get; }
 
     /// <summary>
+    /// Nome curto exibido na árvore (último segmento do namespace).
+    /// </summary>
+    public string DisplayName { get; }
+
+    /// <summary>
     /// Nó pai (null para raiz).
     /// </summary>
     public NamespaceNodeViewModel? Parent { get; set; }
@@ -53,5 +58,11 @@ public partial class NamespaceNodeViewModel : ObservableObject
     /// Cria um novo nó de namespace.
     /// </summary>
     /// <param name="name">Nome do namespace.</param>
-    public NamespaceNodeViewModel(string name) => Name = name;
+    public NamespaceNodeViewModel(string name)
+    {
+        Name = name;
+
+        var lastDot = name.LastIndexOf('.');
+        DisplayName = lastDot >= 0 ? name[(lastDot + 1)..] : name;
+    }
 }

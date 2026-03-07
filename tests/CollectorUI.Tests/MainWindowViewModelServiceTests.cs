@@ -1,10 +1,6 @@
-using System;
-using System.Collections.Generic;
 using System.Collections.ObjectModel;
-using System.Threading.Tasks;
 using NSubstitute;
 using Xunit;
-using CommunityToolkit.Mvvm.Input;
 #pragma warning disable xUnit1051
 using CollectorUI.ViewModels;
 using CollectorUI.Models;
@@ -22,7 +18,7 @@ public class MainWindowViewModelServiceTests
         var reportService = Substitute.For<IReportGeneratorService>();
         var updateService = Substitute.For<IUpdateService>();
 
-        reportService.CreateReportAsync(Arg.Any<string?>(), Arg.Any<List<ProjectModel>>())
+        reportService.CreateReportAsync(Arg.Any<string?>(), Arg.Any<List<ProjectModel>>(), Arg.Any<CancellationToken>())
             .Returns(ci =>
             {
                 var list = ci.ArgAt<List<ProjectModel>>(1);
@@ -59,7 +55,7 @@ public class MainWindowViewModelServiceTests
         var updateService = Substitute.For<IUpdateService>();
 
         var latest = new UpdateService.ReleaseInfo("v99.0.0", "Test Release", new Version(99, 0, 0), "asset.zip", "http://example.com/asset.zip");
-        updateService.GetLatestReleaseAsync(Arg.Any<System.Threading.CancellationToken>()).Returns(Task.FromResult<UpdateService.ReleaseInfo?>(latest));
+        updateService.GetLatestReleaseAsync(Arg.Any<CancellationToken>()).Returns(Task.FromResult<UpdateService.ReleaseInfo?>(latest));
         updateService.IsUpdateAvailable(Arg.Any<Version>()).Returns(true);
 
         var vm = new MainWindowViewModel(selectionService, reportService, updateService);
@@ -81,9 +77,9 @@ public class MainWindowViewModelServiceTests
         var updateService = Substitute.For<IUpdateService>();
 
         var latest = new UpdateService.ReleaseInfo("v99.0.0", "Test Release", new Version(99, 0, 0), "asset.zip", "http://example.com/asset.zip");
-        updateService.GetLatestReleaseAsync(Arg.Any<System.Threading.CancellationToken>()).Returns(Task.FromResult<UpdateService.ReleaseInfo?>(latest));
+        updateService.GetLatestReleaseAsync(Arg.Any<CancellationToken>()).Returns(Task.FromResult<UpdateService.ReleaseInfo?>(latest));
         updateService.IsUpdateAvailable(Arg.Any<Version>()).Returns(true);
-        updateService.DownloadAssetAsync(Arg.Any<string>(), Arg.Any<IProgress<double>>(), Arg.Any<System.Threading.CancellationToken>()).Returns(Task.FromResult("/tmp/asset.zip"));
+        updateService.DownloadAssetAsync(Arg.Any<string>(), Arg.Any<IProgress<double>>(), Arg.Any<CancellationToken>()).Returns(Task.FromResult("/tmp/asset.zip"));
         updateService.ExtractToNewFolder(Arg.Any<string>(), Arg.Any<string>()).Returns("/tmp/extracted");
         updateService.StartUpdaterAndExit(Arg.Any<string>()).Returns(true);
 
@@ -96,6 +92,37 @@ public class MainWindowViewModelServiceTests
         await updateService.Received(1).DownloadAssetAsync(Arg.Is<string>(s => s == latest.AssetDownloadUrl), Arg.Any<IProgress<double>>());
         updateService.Received(1).StartUpdaterAndExit(Arg.Is<string>(s => s == "/tmp/extracted"));
         Assert.Contains("Updater launched", vm.StatusMessage);
+    }
+
+    [Fact(DisplayName = "CancelOperation cancels running coverage generation")]
+    public async Task CancelOperation_GenerateCoverageInProgress_SetsCanceledStatus()
+    {
+        var selectionService = Substitute.For<ISelectionService>();
+        var reportService = Substitute.For<IReportGeneratorService>();
+        var updateService = Substitute.For<IUpdateService>();
+
+        reportService.CreateReportAsync(Arg.Any<string?>(), Arg.Any<List<ProjectModel>>(), Arg.Any<CancellationToken>())
+            .Returns(async ci =>
+            {
+                var ct = ci.ArgAt<CancellationToken>(2);
+                await Task.Delay(TimeSpan.FromSeconds(5), ct);
+                return "Success";
+            });
+
+        var vm = new MainWindowViewModel(selectionService, reportService, updateService)
+        {
+            SolutionPath = "/tmp/test.sln",
+            TestProjects = [new() { Name = "P", FullPath = "/tmp/p.csproj", IsTestProject = true, IsSelected = true }]
+        };
+
+        var runTask = vm.GenerateCoverage();
+        await Task.Delay(100);
+
+        vm.CancelOperation();
+        await runTask;
+
+        Assert.Equal("Operation canceled.", vm.StatusMessage);
+        Assert.False(vm.IsOperationCancelable);
     }
 }
 #pragma warning restore xUnit1051
