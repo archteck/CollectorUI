@@ -1,8 +1,6 @@
 ﻿using System.Xml.Linq;
 using CollectorUI.ViewModels;
 using System.Collections.ObjectModel;
-using Avalonia.Controls;
-using Avalonia.Controls.Models.TreeDataGrid;
 using CollectorUI.Services;
 
 namespace CollectorUI.Models;
@@ -25,8 +23,6 @@ public class ProjectModel
     /// Árvore de namespaces para binding no XAML.
     /// </summary>
     public ObservableCollection<NamespaceNodeViewModel> NamespaceTree { get; }
-
-    public HierarchicalTreeDataGridSource<NamespaceNodeViewModel>? Source { get; set; }
 
     private static readonly char[] s_separator = ['\r', '\n'];
 
@@ -273,8 +269,6 @@ public class ProjectModel
         var prevExpansion = CaptureExpansionStates();
         RebuildVisibleTree(selectionMap,prevExpansion);
 
-        // Recria a source para garantir que o estado IsExpanded é respeitado após filtro.
-        RecreateSource();
     }
 
     // Captura o estado de seleção atual por nome de namespace.
@@ -470,25 +464,7 @@ public class ProjectModel
         NamespaceTree.Clear();
         RebuildVisibleTree(prevSelection, prevExpansion);
 
-        // (Re)cria a fonte (Source) – ligar expansão ao IsExpanded.
-        RecreateSource();
     }
-
-    // Helper para recriar a fonte com colunas e binding de expansão.
-    private void RecreateSource() =>
-        Source = new HierarchicalTreeDataGridSource<NamespaceNodeViewModel>(NamespaceTree)
-        {
-            Columns =
-            {
-                new CheckBoxColumn<NamespaceNodeViewModel>("Selected", x => x.IsChecked,
-                    (x, value) => x.IsChecked = value),
-                new HierarchicalExpanderColumn<NamespaceNodeViewModel>(
-                    new TextColumn<NamespaceNodeViewModel, string>
-                        ("Namespace", x => x.Name),
-                    x => x.Children,
-                    isExpandedSelector: x => x.IsExpanded)
-            },
-        };
 
     /// <summary>
     /// Retorna a lista de namespaces selecionados (apenas maiores pais, sem filhos redundantes).

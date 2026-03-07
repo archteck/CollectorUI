@@ -112,12 +112,27 @@
                                      Watermark="Filter namespaces..."
                                      Text="{Binding FilterText, UpdateSourceTrigger=PropertyChanged}" />
 
-                            <TreeDataGrid Grid.Row="3"
-                                          Source="{Binding Source}"
-                                          HorizontalAlignment="Stretch"
-                                          VerticalAlignment="Stretch"
-                                          MinWidth="360"
-                                          MinHeight="240" />
+                            <TreeView Grid.Row="3"
+                                      x:CompileBindings="False"
+                                      ItemsSource="{Binding NamespaceTree}"
+                                      HorizontalAlignment="Stretch"
+                                      VerticalAlignment="Stretch"
+                                      MinWidth="360"
+                                      MinHeight="240">
+                                <TreeView.ItemContainerTheme>
+                                    <ControlTheme TargetType="TreeViewItem">
+                                        <Setter Property="IsExpanded" Value="{Binding DataContext.IsExpanded, RelativeSource={RelativeSource Self}, Mode=TwoWay}" />
+                                    </ControlTheme>
+                                </TreeView.ItemContainerTheme>
+                                <TreeView.ItemTemplate>
+                                    <TreeDataTemplate ItemsSource="{Binding Children}">
+                                        <StackPanel Orientation="Horizontal" Spacing="8">
+                                            <CheckBox IsChecked="{Binding IsChecked, Mode=TwoWay}" VerticalAlignment="Center" />
+                                            <TextBlock Text="{Binding Name}" VerticalAlignment="Center" />
+                                        </StackPanel>
+                                    </TreeDataTemplate>
+                                </TreeView.ItemTemplate>
+                            </TreeView>
                         </Grid>
                     </DataTemplate>
                 </TabControl.ContentTemplate>

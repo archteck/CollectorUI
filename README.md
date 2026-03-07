@@ -8,7 +8,7 @@ CollectorUI is a cross‑platform desktop application (Windows, macOS, and Linux
 
 - Coverage report generation (e.g., Cobertura) to HTML using ReportGenerator.
 - Simple UI to select a solution and test projects.
-- Hierarchical TreeDataGrid with:
+- Hierarchical namespace TreeView with:
   - Namespace selection via checkboxes.
   - Instant text filtering (matches nodes or any of their descendants).
   - Expansion state preservation when filtering and updating.
@@ -65,7 +65,7 @@ CollectorUI is a cross‑platform desktop application (Windows, macOS, and Linux
    - Each tab represents one test project.
 
 3. Explore namespaces
-   - The TreeDataGrid shows the namespace hierarchy for the project (or dependencies when applicable).
+    - The namespace TreeView shows the hierarchy for the project (or dependencies when applicable).
    - Check/uncheck nodes to include/exclude areas in the report.
    - Use the text filter to search by namespace name. Nodes that match (or have matching descendants) remain visible.
    - Expansion state is preserved; with an active filter, relevant nodes are expanded to reveal matches.
