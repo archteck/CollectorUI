@@ -144,7 +144,7 @@
                                     <TreeDataTemplate ItemsSource="{Binding Children}">
                                         <StackPanel Orientation="Horizontal" Spacing="8">
                                             <CheckBox IsChecked="{Binding IsChecked, Mode=TwoWay}" VerticalAlignment="Center" />
-                                            <TextBlock Text="{Binding Name}" VerticalAlignment="Center" />
+                                            <TextBlock Text="{Binding DisplayName}" VerticalAlignment="Center" />
                                         </StackPanel>
                                     </TreeDataTemplate>
                                 </TreeView.ItemTemplate>

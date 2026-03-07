@@ -343,7 +343,9 @@ public class ProjectModel
 
         foreach (var root in _allNamespaceRoots)
         {
-            var clone = CloneFiltered(root, term, selectionMap, expansionMap);
+            var clone = term is null
+                ? CloneAll(root, selectionMap, expansionMap)
+                : CloneFiltered(root, term, selectionMap, expansionMap);
             if (clone is not null)
             {
                 // Expande todos quando há filtro para facilitar a visualização.
@@ -354,6 +356,28 @@ public class ProjectModel
                 NamespaceTree.Add(clone);
             }
         }
+    }
+
+    // Clona a árvore completa sem avaliação de filtro (caminho rápido para term nulo).
+    private static NamespaceNodeViewModel CloneAll(
+        NamespaceNodeViewModel node,
+        Dictionary<string, bool> selectionMap,
+        Dictionary<string, bool> expansionMap)
+    {
+        var clone = new NamespaceNodeViewModel(node.Name)
+        {
+            IsChecked = selectionMap.TryGetValue(node.Name, out var isChecked) ? isChecked : true,
+            IsExpanded = expansionMap.TryGetValue(node.Name, out var isExp) ? isExp : node.IsExpanded
+        };
+
+        foreach (var child in node.Children)
+        {
+            var childClone = CloneAll(child, selectionMap, expansionMap);
+            childClone.Parent = clone;
+            clone.Children.Add(childClone);
+        }
+
+        return clone;
     }
 
     // Clona o nó aplicando o filtro; retorna null se nem o nó nem os descendentes combinarem.
