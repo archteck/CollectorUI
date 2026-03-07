@@ -19,7 +19,10 @@ public partial class MainWindowViewModel : ViewModelBase
 
     [ObservableProperty] private SolutionModel? _currentSolution;
 
-    [ObservableProperty] private ObservableCollection<ProjectModel> _testProjects = new();
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(HasTestProjects))]
+    [NotifyPropertyChangedFor(nameof(HasNoTestProjects))]
+    private ObservableCollection<ProjectModel> _testProjects = new();
 
     [ObservableProperty] private bool _isBusy;
 
@@ -40,6 +43,10 @@ public partial class MainWindowViewModel : ViewModelBase
     [ObservableProperty] private double _downloadProgress; // 0..1
 
     public bool CanDownloadAppUpdate => IsUpdateAvailable && !IsCheckingUpdate;
+
+    public bool HasTestProjects => TestProjects.Count > 0;
+
+    public bool HasNoTestProjects => !HasTestProjects;
 
     public MainWindowViewModel(
         CollectorUI.Services.ISelectionService? selectionService = null,

@@ -84,7 +84,23 @@
             </StackPanel>
 
             <!-- Content Area -->
-            <TabControl Grid.Row="1" Margin="10,0,10,10" ItemsSource="{Binding TestProjects}">
+            <Border Grid.Row="1"
+                    Margin="10,0,10,10"
+                    Padding="12"
+                    Background="#FFF8DB"
+                    BorderBrush="#E0C200"
+                    BorderThickness="1"
+                    CornerRadius="4"
+                    IsVisible="{Binding HasNoTestProjects}">
+                <TextBlock Text="No test projects were detected in this solution. Ensure your test projects reference Microsoft.NET.Test.Sdk (or xUnit/NUnit/MSTest packages)."
+                           Foreground="#6B5900"
+                           TextWrapping="Wrap" />
+            </Border>
+
+            <TabControl Grid.Row="1"
+                        Margin="10,0,10,10"
+                        ItemsSource="{Binding TestProjects}"
+                        IsVisible="{Binding HasTestProjects}">
                 <TabControl.TabStripPlacement>Top</TabControl.TabStripPlacement>
                 <TabControl.ItemTemplate>
                     <DataTemplate>

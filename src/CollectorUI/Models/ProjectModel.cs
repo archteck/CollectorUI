@@ -188,6 +188,19 @@ public class ProjectModel
                     }
                 }
             }
+
+            // Fallback: if dependency namespaces are unavailable, show the test project's own namespaces
+            // so the tree does not appear empty.
+            if (nsStrings.Count == 0)
+            {
+                foreach (var ns in Namespaces)
+                {
+                    if (!string.IsNullOrWhiteSpace(ns.Name))
+                    {
+                        nsStrings.Add(ns.Name!);
+                    }
+                }
+            }
         }
         else
         {

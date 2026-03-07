@@ -20,6 +20,33 @@ public class FakeSelectionService : CollectorUI.Services.ISelectionService
 
 public class MainWindowViewModelTests
 {
+    [Fact(DisplayName = "HasTestProjects is false when list is empty")]
+    public void HasTestProjects_EmptyList_ReturnsFalse()
+    {
+        var vm = new MainWindowViewModel(new FakeSelectionService())
+        {
+            TestProjects = new ObservableCollection<ProjectModel>()
+        };
+
+        Assert.False(vm.HasTestProjects);
+        Assert.True(vm.HasNoTestProjects);
+    }
+
+    [Fact(DisplayName = "HasTestProjects is true when list has items")]
+    public void HasTestProjects_NonEmptyList_ReturnsTrue()
+    {
+        var vm = new MainWindowViewModel(new FakeSelectionService())
+        {
+            TestProjects = new ObservableCollection<ProjectModel>
+            {
+                new ProjectModel { Name = "A" }
+            }
+        };
+
+        Assert.True(vm.HasTestProjects);
+        Assert.False(vm.HasNoTestProjects);
+    }
+
     [Fact(DisplayName = "SelectAllProjects selects all projects")]
     public void SelectAllProjects_MultipleProjects_AllSelected()
     {
