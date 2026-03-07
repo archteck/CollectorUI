@@ -39,24 +39,21 @@ public class ProjectModel
             if (ns != null)
             {
                 var packageRefs = doc.Descendants(ns + "PackageReference");
-                var hasCoverlet = false;
                 var hasTestFramework = false;
                 foreach (var packageRef in packageRefs)
                 {
                     var packageName = packageRef.Attribute("Include")?.Value;
                     if (packageName != null)
                     {
-                        if (packageName.Contains("coverlet.msbuild"))
-                        {
-                            hasCoverlet = true;
-                        }
                         if (packageName.Contains("xunit") ||
                             packageName.Contains("NUnit") ||
-                            packageName.Contains("MSTest"))
+                            packageName.Contains("MSTest") ||
+                            packageName.Contains("Microsoft.NET.Test.Sdk"))
                         {
                             hasTestFramework = true;
                         }
-                        if(hasCoverlet && hasTestFramework)
+
+                        if (hasTestFramework)
                         {
                             project.IsTestProject = true;
                             break;

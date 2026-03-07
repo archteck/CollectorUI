@@ -119,11 +119,11 @@
                                       VerticalAlignment="Stretch"
                                       MinWidth="360"
                                       MinHeight="240">
-                                <TreeView.ItemContainerTheme>
-                                    <ControlTheme TargetType="TreeViewItem">
-                                        <Setter Property="IsExpanded" Value="{Binding DataContext.IsExpanded, RelativeSource={RelativeSource Self}, Mode=TwoWay}" />
-                                    </ControlTheme>
-                                </TreeView.ItemContainerTheme>
+                                <TreeView.Styles>
+                                    <Style Selector="TreeViewItem">
+                                        <Setter Property="IsExpanded" Value="{Binding IsExpanded, Mode=TwoWay}" />
+                                    </Style>
+                                </TreeView.Styles>
                                 <TreeView.ItemTemplate>
                                     <TreeDataTemplate ItemsSource="{Binding Children}">
                                         <StackPanel Orientation="Horizontal" Spacing="8">

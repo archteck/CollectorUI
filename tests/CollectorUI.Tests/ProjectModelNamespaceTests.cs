@@ -56,6 +56,26 @@ public class ProjectModelNamespaceTests
         Assert.False(feature!.IsChecked);
     }
 
+    [Fact(DisplayName = "Test project falls back to own namespaces when dependencies are empty")]
+    public void GetNamespaceTree_TestProjectWithoutDependencyNamespaces_UsesOwnNamespaces()
+    {
+        var model = new ProjectModel
+        {
+            IsTestProject = true,
+            Namespaces =
+            [
+                new NamespaceModel { Name = "Standalone.Tests" },
+                new NamespaceModel { Name = "Standalone.Tests.Unit" }
+            ]
+        };
+
+        model.BuildNamespaceTree();
+
+        Assert.NotEmpty(model.NamespaceTree);
+        var root = FindNode(model.NamespaceTree, "Standalone");
+        Assert.NotNull(root);
+    }
+
     private static ProjectModel CreateModelWithSampleNamespaces()
     {
         var model = new ProjectModel
