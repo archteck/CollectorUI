@@ -1,4 +1,3 @@
-using System.Collections.Generic;
 using CollectorUI.Models;
 using CollectorUI.Services;
 using CollectorUI.ViewModels;

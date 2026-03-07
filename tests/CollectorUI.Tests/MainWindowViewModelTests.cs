@@ -5,9 +5,9 @@ using CollectorUI.Models;
 
 namespace CollectorUI.Tests;
 
-public class FakeSelectionService : CollectorUI.Services.ISelectionService
+public class FakeSelectionService : Services.ISelectionService
 {
-    public HashSet<string> LoadDeselectedNamespaces(string solutionPath, string projectPath) => new();
+    public HashSet<string> LoadDeselectedNamespaces(string solutionPath, string projectPath) => [];
 
     public void SaveDeselectedForSolution(string solutionPath, IEnumerable<(string ProjectPath, IEnumerable<string> DeselectedNamespaces)> data) { }
 
@@ -25,7 +25,7 @@ public class MainWindowViewModelTests
     {
         var vm = new MainWindowViewModel(new FakeSelectionService())
         {
-            TestProjects = new ObservableCollection<ProjectModel>()
+            TestProjects = []
         };
 
         Assert.False(vm.HasTestProjects);
@@ -37,10 +37,7 @@ public class MainWindowViewModelTests
     {
         var vm = new MainWindowViewModel(new FakeSelectionService())
         {
-            TestProjects = new ObservableCollection<ProjectModel>
-            {
-                new ProjectModel { Name = "A" }
-            }
+            TestProjects = [new ProjectModel { Name = "A" }]
         };
 
         Assert.True(vm.HasTestProjects);

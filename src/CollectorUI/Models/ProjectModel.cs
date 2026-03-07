@@ -2,7 +2,6 @@
 using System.Diagnostics;
 using CollectorUI.ViewModels;
 using System.Collections.ObjectModel;
-using CollectorUI.Services;
 
 namespace CollectorUI.Models;
 
@@ -432,7 +431,7 @@ public class ProjectModel
     /// Aplica estados desmarcados guardados em BD para esta solução/projeto (default permanece true).
     /// </summary>
     /// <param name="solutionPath">Caminho completo da solução.</param>
-    public void ApplyDeselectionStates(string solutionPath, CollectorUI.Services.ISelectionService selectionService)
+    public void ApplyDeselectionStates(string solutionPath, Services.ISelectionService selectionService)
     {
         if (string.IsNullOrWhiteSpace(solutionPath) || string.IsNullOrWhiteSpace(FullPath) || selectionService is null)
         {

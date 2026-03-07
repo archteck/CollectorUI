@@ -34,11 +34,11 @@ public class AppDbContext : DbContext
 
         modelBuilder.Entity<AppSetting>()
             .HasIndex(x => x.Key)
-            .IsUnique(true);
+            .IsUnique();
 
         modelBuilder.Entity<SolutionReport>()
             .HasIndex(x => x.SolutionPath)
-            .IsUnique(true);
+            .IsUnique();
     }
 
     public static void EnsureCreated()

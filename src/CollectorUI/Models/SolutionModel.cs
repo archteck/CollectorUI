@@ -8,8 +8,10 @@ public class SolutionModel
     public List<ProjectModel> Projects { get; set; } = [];
     public List<ProjectModel> TestProjects => Projects.Where(p => p.IsTestProject).ToList();
 
-    public static SolutionModel ParseFromFile(string filePath)
+    public static SolutionModel ParseFromFile(string filePath, CancellationToken cancellationToken = default)
     {
+        cancellationToken.ThrowIfCancellationRequested();
+
         var solution = new SolutionModel
         {
             SolutionPath = filePath
@@ -25,6 +27,8 @@ public class SolutionModel
 
         foreach (var projectPath in projectPaths)
         {
+            cancellationToken.ThrowIfCancellationRequested();
+
             if (File.Exists(projectPath))
             {
                 var project = ProjectModel.FromProjectFile(projectPath);
@@ -35,12 +39,14 @@ public class SolutionModel
         // Find project dependencies
         foreach (var project in solution.Projects)
         {
+            cancellationToken.ThrowIfCancellationRequested();
             project.FindDependencies(solution.Projects);
         }
 
         // Rebuild namespace trees now that dependencies are known
         foreach (var project in solution.Projects)
         {
+            cancellationToken.ThrowIfCancellationRequested();
             project.BuildNamespaceTree();
         }
 
