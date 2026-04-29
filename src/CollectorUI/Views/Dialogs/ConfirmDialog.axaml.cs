@@ -5,6 +5,10 @@ namespace CollectorUI.Views.Dialogs;
 
 public partial class ConfirmDialog : Window
 {
+    public ConfirmDialog() : this("Confirm", string.Empty)
+    {
+    }
+
     public ConfirmDialog(string title, string message, string yesText = "Yes", string noText = "No")
     {
         InitializeComponent();

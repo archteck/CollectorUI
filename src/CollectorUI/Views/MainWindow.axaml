@@ -8,7 +8,7 @@
         x:Class="CollectorUI.Views.MainWindow"
         x:DataType="vm:MainWindowViewModel"
         Icon="/Assets/avalonia-logo.ico"
-        SystemDecorations="Full"
+        WindowDecorations="Full"
         WindowState="Normal"
         Width="900"
         Height="650"
@@ -126,7 +126,7 @@
 
                             <TextBox Grid.Row="2"
                                      Margin="0,0,0,10"
-                                     Watermark="Filter namespaces..."
+                                     PlaceholderText="Filter namespaces..."
                                      Text="{Binding FilterText, UpdateSourceTrigger=PropertyChanged, Delay=220}" />
 
                             <TreeView Grid.Row="3"
