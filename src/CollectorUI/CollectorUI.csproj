@@ -11,10 +11,10 @@
     <Product>Collector UI</Product>
     <!-- App versioning -->
     <!-- Set these to control the version shown in the app and used by the updater. -->
-    <Version>3.8.1</Version>
-    <AssemblyVersion>3.8.1.0</AssemblyVersion>
-    <FileVersion>3.8.1.0</FileVersion>
-    <InformationalVersion>3.8.1</InformationalVersion>
+    <Version>3.8.2</Version>
+    <AssemblyVersion>3.8.2.0</AssemblyVersion>
+    <FileVersion>3.8.2.0</FileVersion>
+    <InformationalVersion>3.8.2</InformationalVersion>
   </PropertyGroup>
   <ItemGroup>
     <AvaloniaResource Include="Assets\**"/>
