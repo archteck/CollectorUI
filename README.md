@@ -1,6 +1,6 @@
 # CollectorUI
 
-CollectorUI is a cross‑platform desktop application (Windows, macOS, and Linux) built with .NET 10 and C# 14. It simplifies generating and viewing code coverage reports by converting raw coverage outputs into readable HTML via ReportGenerator.
+CollectorUI is a cross‑platform desktop application (Windows, macOS, and Linux) built with .NET 11 and C# 15. It simplifies generating and viewing code coverage reports by converting raw coverage outputs into readable HTML via ReportGenerator.
 
 <img width="835" height="914" alt="image" src="https://github.com/user-attachments/assets/ed471e74-031c-43df-b5e7-a1aa42a2495f" />
 
@@ -19,15 +19,15 @@ CollectorUI is a cross‑platform desktop application (Windows, macOS, and Linux
 
 ## Tech Stack
 
-- .NET 10.0
-- C# 14.0
+- .NET 11.0
+- C# 15.0
 - Avalonia UI (cross‑platform desktop)
 - SQLite + EF Core (lightweight local persistence)
 - ReportGenerator (coverage to HTML conversion)
 
 ## Requirements
 
-- .NET 10 SDK
+- .NET 11 SDK
 - Your preferred IDE (Rider, Visual Studio, VS Code)
 - Optional: ReportGenerator installed as a .NET global tool (the app will attempt to install it if needed)
   ```bash

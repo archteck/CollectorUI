@@ -1,7 +1,7 @@
 # C# Development
 
 ## C# Instructions
-- Always use the latest version C#, currently C# 13 features.
+- Always use the latest version C#, currently C# 15 features.
 - Write clear and concise comments for each function.
 
 ## General Instructions
